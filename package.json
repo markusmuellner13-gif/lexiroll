@@ -10,7 +10,8 @@
     "lint": "next lint",
     "icons": "node scripts/generate-icons.mjs",
     "test": "tsx scripts/selftest.ts",
-    "test:ui": "node scripts/uitest.mjs"
+    "test:ui": "node scripts/uitest.mjs",
+    "test:online": "node scripts/uitest-online.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
