@@ -110,12 +110,19 @@ async function generateBank(category: string, lang: Lang, apiKey: string): Promi
       }),
       signal: AbortSignal.timeout(25_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // Surfaces a bad key or exhausted credit instead of silently guessing.
+      console.warn("bot-words: Claude API said", res.status, (await res.text()).slice(0, 200));
+      return null;
+    }
     const data = (await res.json()) as { content?: { type: string; text?: string }[] };
     const text = data.content?.find((c) => c.type === "text")?.text ?? "";
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
-    if (start < 0 || end <= start) return null;
+    if (start < 0 || end <= start) {
+      console.warn("bot-words: no JSON in reply for", category, text.slice(0, 120));
+      return null;
+    }
     const parsed = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
 
     const bank: Bank = {};
@@ -128,8 +135,13 @@ async function generateBank(category: string, lang: Lang, apiKey: string): Promi
         .slice(0, 4);
       if (cleaned.length) bank[key] = cleaned;
     }
-    return Object.keys(bank).length >= 8 ? bank : null;
-  } catch {
+    if (Object.keys(bank).length < 8) {
+      console.warn("bot-words: too few usable letters for", category, Object.keys(bank).length);
+      return null;
+    }
+    return bank;
+  } catch (err) {
+    console.warn("bot-words: request failed for", category, err instanceof Error ? err.message : err);
     return null;
   }
 }
