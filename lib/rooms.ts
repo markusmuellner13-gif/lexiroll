@@ -1,5 +1,7 @@
 import type { Client } from "@libsql/client";
-import { ensureSchema } from "./db";
+import { ensureSchema, getBankCache } from "./db";
+import { normalize } from "./game/categories";
+import { hasBank, registerBank } from "./game/wordbank";
 import { answersAt, makeBots, planBotRound, type BotPlan } from "./game/bots";
 import { rollLetter } from "./game/letters";
 import { scoreRound, type VetoMap } from "./game/scoring";
@@ -759,6 +761,29 @@ function sanitizeAnswers(raw: unknown, settings: GameSettings): Answers {
   return out;
 }
 
+/**
+ * Loads generated word banks for invented categories before planning a round.
+ *
+ * The browser asks /api/bot-words and caches the result, but bot rounds are
+ * planned here - so without this the server would still be guessing from the
+ * generic pool for every custom category.
+ */
+async function teachBots(settings: GameSettings) {
+  const unknown = settings.categories.filter((cat) => !hasBank(settings.lang, cat.bank));
+  if (!unknown.length) return;
+
+  await Promise.all(
+    unknown.map(async (cat) => {
+      const key = normalize(cat.name);
+      if (!key) return;
+      const bank = await getBankCache(settings.lang, key);
+      if (!bank) return;
+      registerBank(settings.lang, key, bank);
+      cat.bank = key;
+    }),
+  );
+}
+
 async function startRound(c: Client, room: RoomRow, players: Player[], settings: GameSettings) {
   const now = Date.now();
   const used = JSON.parse(room.used_letters) as string[];
@@ -767,6 +792,7 @@ async function startRound(c: Client, room: RoomRow, players: Player[], settings:
   const startedAt = now + 2600; // dice animation runs first on every client
   const endsAt = settings.roundSeconds > 0 ? startedAt + settings.roundSeconds * 1000 : null;
 
+  await teachBots(settings);
   const plans = players
     .filter((p) => p.kind === "bot")
     .map((bot) => planBotRound(bot, settings.categories, letter, settings));
