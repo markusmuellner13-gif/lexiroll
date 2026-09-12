@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { diceFrames } from "@/lib/game/letters";
 
 type Frame = { letter: string; rot: number; tilt: number; scale: number; gap: number };
@@ -31,12 +31,11 @@ export function LetterDice({
 }) {
   const [frame, setFrame] = useState<Frame>({ letter, rot: 0, tilt: 0, scale: 1, gap: 0 });
   const [stage, setStage] = useState<"idle" | "rolling" | "landed">("idle");
-  const settled = useRef(letter);
 
+  // Rolls on mount as well as on every letter change: the die is mounted with
+  // the round's letter already set, so a "only when it changes" guard would
+  // skip the roll entirely and never call onLanded.
   useEffect(() => {
-    if (settled.current === letter) return;
-    settled.current = letter;
-
     const steps = 22;
     const letters = diceFrames(letter, excluded, steps);
     // Ease-in gaps: a fast blur at the start, heavy clunks at the end.

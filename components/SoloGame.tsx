@@ -70,6 +70,19 @@ export function SoloGame() {
     return () => clearInterval(id);
   }, [phase]);
 
+  // Safety net: the die reports when it has landed, but a game must never be
+  // stuck on the roll screen if that callback is ever missed.
+  useEffect(() => {
+    if (phase !== "rolling") return;
+    const id = setTimeout(() => {
+      const start = Date.now();
+      setRoundStart(start);
+      setNow(start);
+      setPhase("playing");
+    }, 4000);
+    return () => clearTimeout(id);
+  }, [phase, roundNo]);
+
   const patchSettings = (next: GameSettings) => {
     setSettings(next);
     saveSettings(next);
