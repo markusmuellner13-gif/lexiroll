@@ -31,6 +31,8 @@ export function RoomGame({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
 
   const offset = useRef(0);
+  const stateRef = useRef<RoomState | null>(null);
+  stateRef.current = state;
   const answersRef = useRef<Answers>({});
   answersRef.current = answers;
   const currentRound = useRef(0);
@@ -123,8 +125,6 @@ export function RoomGame({ code }: { code: string }) {
     };
   }, [profile, code, apply]);
 
-  const stateRef = useRef<RoomState | null>(null);
-  stateRef.current = state;
 
   // Local clock for the countdown.
   useEffect(() => {

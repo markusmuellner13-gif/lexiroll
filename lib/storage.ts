@@ -41,7 +41,10 @@ export function loadSettings(): GameSettings {
   const categories = Array.isArray(stored.categories) && stored.categories.length
     ? (stored.categories as Category[])
     : base.categories;
-  return { ...base, ...stored, categories };
+  const merged = { ...base, ...stored, categories };
+  // Without a clock, Stopp is the only thing that can end a round.
+  if (merged.roundSeconds === 0) merged.allowStop = true;
+  return merged;
 }
 
 export function saveSettings(settings: GameSettings) {

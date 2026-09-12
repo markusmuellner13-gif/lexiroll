@@ -45,7 +45,10 @@ export function SettingsPanel({
           min={0}
           max={300}
           step={15}
-          onChange={(roundSeconds) => patch({ roundSeconds })}
+          onChange={(roundSeconds) =>
+            // Without a clock, Stopp is the only thing that can end a round.
+            patch(roundSeconds === 0 ? { roundSeconds, allowStop: true } : { roundSeconds })
+          }
           format={(v) => (v === 0 ? "∞" : `${v}s`)}
         />
       </div>
@@ -68,9 +71,16 @@ export function SettingsPanel({
       <div className="space-y-1 border-t border-white/8 pt-2">
         <Toggle
           checked={settings.allowStop}
-          onChange={(allowStop) => patch({ allowStop })}
+          onChange={(allowStop) => {
+            if (settings.roundSeconds === 0) return; // nothing else would end the round
+            patch({ allowStop });
+          }}
           label="Stopp-Knopf"
-          hint="Wer zuerst alles ausfüllt, beendet die Runde für alle."
+          hint={
+            settings.roundSeconds === 0
+              ? "Ohne Zeitlimit unverzichtbar — sonst endet die Runde nie."
+              : "Wer zuerst alles ausfüllt, beendet die Runde für alle."
+          }
         />
         <Toggle
           checked={settings.soloBonus}

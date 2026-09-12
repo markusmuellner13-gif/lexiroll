@@ -81,11 +81,13 @@ function sanitizeSettings(raw: unknown): GameSettings {
           custom: !!c.custom,
         }))
     : base.categories;
+  const roundSeconds = clampInt(s.roundSeconds, 0, 600, base.roundSeconds);
   return {
     categories: categories.length ? categories : base.categories,
     rounds: clampInt(s.rounds, 1, 20, base.rounds),
-    roundSeconds: clampInt(s.roundSeconds, 0, 600, base.roundSeconds),
-    allowStop: typeof s.allowStop === "boolean" ? s.allowStop : base.allowStop,
+    roundSeconds,
+    // Without a clock, Stopp is the only thing that can end a round.
+    allowStop: roundSeconds === 0 ? true : typeof s.allowStop === "boolean" ? s.allowStop : base.allowStop,
     excludedLetters: Array.isArray(s.excludedLetters)
       ? s.excludedLetters.map((l) => String(l).toUpperCase().slice(0, 1)).slice(0, 20)
       : base.excludedLetters,
