@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #07060f;
+  --color-ink-2: #0f0d1d;
+  --color-paper: #f5f3ff;
+  --color-muted: #a09bc0;
+  --color-lime: #b8ff4a;
+  --color-magenta: #ff4fa3;
+  --color-cyan: #45dcff;
+  --color-amber: #ffc53d;
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-display);
+  min-height: 100svh;
+  background-image:
+    radial-gradient(60rem 60rem at 12% -10%, rgba(184, 255, 74, 0.13), transparent 60%),
+    radial-gradient(50rem 50rem at 92% 8%, rgba(255, 79, 163, 0.15), transparent 62%),
+    radial-gradient(70rem 50rem at 50% 110%, rgba(69, 220, 255, 0.12), transparent 65%);
+  background-attachment: fixed;
+}
+
+/* Inputs must never zoom the viewport on iOS: 16px minimum. */
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+  font-size: max(16px, 1em);
+}
+
+@layer utilities {
+  .shell {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: max(1rem, var(--safe-l), var(--safe-r));
+  }
+
+  .glass {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+  }
+
+  .glow-lime {
+    box-shadow: 0 0 0 1px rgba(184, 255, 74, 0.4), 0 12px 40px -12px rgba(184, 255, 74, 0.55);
+  }
+
+  .fluid-title {
+    font-size: clamp(2.1rem, 9vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop {
+  animation: pop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dice-tumble {
+  0% {
+    transform: rotateX(0deg) scale(1);
+  }
+  50% {
+    transform: rotateX(180deg) scale(1.12);
+  }
+  100% {
+    transform: rotateX(360deg) scale(1);
+  }
+}
+.animate-tumble {
+  animation: dice-tumble 0.16s linear infinite;
+}
+
+@keyframes land {
+  0% {
+    transform: scale(1.5) rotate(-7deg);
+    filter: blur(6px);
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+.animate-land {
+  animation: land 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.animate-urgent {
+  animation: pulse-ring 0.7s ease-in-out infinite;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes loader-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+.animate-loader {
+  animation: loader-sweep 0.95s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

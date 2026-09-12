@@ -1,0 +1,128 @@
+/**
+ * Compact German word banks for the bots.
+ *
+ * Format per category: "A:Wort,Wort;B:Wort,Wort;..." - parsed lazily and cached.
+ * One string per category keeps the bundle small and the data editable by hand.
+ */
+
+const RAW: Record<string, string> = {
+  stadt:
+    "A:Aachen,Augsburg,Amsterdam,Ankara;B:Berlin,Bremen,Bonn,Barcelona;C:Chemnitz,Chicago,Cottbus;D:Dortmund,Dresden,Duisburg,Dublin;E:Essen,Erfurt,Edinburgh,Eindhoven;F:Frankfurt,Freiburg,Florenz,Flensburg;G:Gelsenkirchen,Graz,Genf,Glasgow;H:Hamburg,Hannover,Heidelberg,Helsinki;I:Innsbruck,Istanbul,Ingolstadt,Irkutsk;J:Jena,Jakarta,Jerusalem,Jerez;K:Koeln,Kiel,Kassel,Kairo;L:Leipzig,Luebeck,London,Lissabon;M:Muenchen,Mainz,Mailand,Madrid;N:Nuernberg,Neapel,New York,Nizza;O:Oldenburg,Osnabrueck,Oslo,Ottawa;P:Potsdam,Paris,Prag,Porto;R:Rostock,Regensburg,Rom,Riga;S:Stuttgart,Salzburg,Sydney,Stockholm;T:Trier,Tokio,Turin,Toronto;U:Ulm,Utrecht,Uppsala,Udine;V:Venedig,Valencia,Villach,Verona;W:Wien,Wuppertal,Warschau,Washington;Z:Zuerich,Zagreb,Zwickau,Zaragoza",
+  land:
+    "A:Argentinien,Australien,Aegypten,Albanien;B:Belgien,Brasilien,Bulgarien,Bolivien;C:Chile,China,Costa Rica,Kolumbien;D:Daenemark,Deutschland,Dominica;E:Estland,Ecuador,England,Eritrea;F:Frankreich,Finnland,Fidschi,Philippinen;G:Griechenland,Ghana,Guatemala,Georgien;H:Honduras,Haiti,Ungarn,Holland;I:Italien,Irland,Island,Indien;J:Japan,Jordanien,Jamaika,Jemen;K:Kanada,Kenia,Kroatien,Kuba;L:Luxemburg,Litauen,Lettland,Libanon;M:Mexiko,Malta,Marokko,Malaysia;N:Norwegen,Niederlande,Nepal,Neuseeland;O:Oesterreich,Oman,Osttimor;P:Polen,Portugal,Peru,Pakistan;R:Rumaenien,Russland,Ruanda;S:Spanien,Schweden,Schweiz,Slowenien;T:Tuerkei,Thailand,Tunesien,Tschechien;U:Ungarn,Uruguay,USA,Ukraine;V:Vietnam,Venezuela,Vatikanstadt;W:Weissrussland,Wales;Z:Zypern,Zimbabwe,Zaire",
+  fluss:
+    "A:Amazonas,Aare,Alster,Ammer;B:Bode,Brahmaputra,Blies;C:Colorado,Congo,Chari;D:Donau,Dnjepr,Drau,Duero;E:Elbe,Ems,Euphrat,Eider;F:Fulda,Flumen,Fils;G:Ganges,Garonne,Glan;H:Havel,Hunte,Hase;I:Isar,Inn,Iller,Indus;J:Jangtse,Jordan,Jagst;K:Kocher,Kongo,Kinzig;L:Lahn,Loire,Lech,Lena;M:Main,Mosel,Mississippi,Maas;N:Neckar,Nil,Nahe,Newa;O:Oder,Ohio,Orinoko,Oise;P:Po,Peene,Parana;R:Rhein,Rhone,Ruhr,Regen;S:Saale,Spree,Seine,Sieg;T:Themse,Tiber,Tigris,Trave;U:Unstrut,Ussuri,Ural;V:Volga,Vltava,Vecht;W:Weser,Werra,Weichsel,Wupper;Z:Zambesi,Zenne",
+  name:
+    "A:Anna,Alex,Aylin,Anton;B:Ben,Bianca,Bruno,Bella;C:Chris,Clara,Carla,Can;D:David,Daniela,Dominik,Dilara;E:Emma,Elias,Eva,Erik;F:Felix,Fiona,Franz,Frida;G:Greta,Gustav,Gina,Georg;H:Hannah,Hugo,Helena,Hans;I:Ida,Ivan,Ines,Ilias;J:Jonas,Julia,Jan,Jasmin;K:Klara,Kevin,Katrin,Kian;L:Lena,Leon,Luca,Laura;M:Mia,Max,Marie,Moritz;N:Nina,Noah,Nils,Nora;O:Oskar,Olivia,Oliver,Ole;P:Paul,Paula,Pia,Peter;R:Rosa,Robin,Ralf,Romy;S:Sophie,Simon,Sara,Stefan;T:Tim,Tina,Theo,Tara;U:Ulrike,Uwe,Ursula,Ulf;V:Vera,Viktor,Valentin,Vanessa;W:Wolfgang,Wanda,Werner,Wilhelm;Z:Zoe,Zeynep,Zacharias",
+  tier:
+    "A:Affe,Adler,Ameise,Antilope;B:Baer,Biber,Biene,Bison;C:Chamaeleon,Chinchilla,Chihuahua;D:Delfin,Dachs,Dromedar,Dogge;E:Elefant,Esel,Eule,Eichhoernchen;F:Fuchs,Frosch,Fledermaus,Flamingo;G:Giraffe,Gans,Gepard,Gorilla;H:Hund,Hase,Hamster,Hai;I:Igel,Iltis,Ibis,Impala;J:Jaguar,Jaguarundi,Javaneraffe;K:Katze,Kuh,Kamel,Kaenguru;L:Loewe,Lama,Luchs,Leopard;M:Maus,Marder,Moewe,Murmeltier;N:Nashorn,Nilpferd,Nerz,Nachtigall;O:Otter,Ochse,Orang-Utan,Oktopus;P:Pferd,Pinguin,Papagei,Panda;R:Ratte,Reh,Robbe,Rabe;S:Schwein,Schaf,Schlange,Schildkroete;T:Tiger,Tukan,Taube,Tintenfisch;U:Uhu,Ur,Unke;V:Vogel,Viper,Vielfrass;W:Wolf,Wal,Wildschwein,Waschbaer;Z:Zebra,Ziege,Zikade",
+  beruf:
+    "A:Arzt,Anwalt,Architekt,Astronaut;B:Baecker,Bauer,Busfahrer,Barkeeper;C:Chemiker,Chirurg,Coach;D:Dachdecker,Designer,Dolmetscher,Detektiv;E:Elektriker,Erzieher,Ergotherapeut;F:Feuerwehrmann,Friseur,Fotograf,Florist;G:Gaertner,Goldschmied,Grafiker;H:Hebamme,Hausmeister,Historiker;I:Ingenieur,Informatiker,Illustrator;J:Journalist,Jurist,Jaeger,Juwelier;K:Koch,Kellner,Krankenpfleger,Kassierer;L:Lehrer,Lokfuehrer,Landwirt,Logopaede;M:Maler,Metzger,Mechaniker,Musiker;N:Notar,Neurologe,Nachrichtensprecher;O:Optiker,Ofensetzer,Onkologe;P:Pilot,Polizist,Physiker,Programmierer;R:Richter,Reporter,Rechtsanwalt;S:Schreiner,Schauspieler,Schneider,Sekretaer;T:Tischler,Tierarzt,Trainer,Taxifahrer;U:Uhrmacher,Unternehmer,Uebersetzer;V:Verkaeufer,Verleger,Veterinaer;W:Winzer,Wissenschaftler,Webdesigner;Z:Zahnarzt,Zimmermann,Zugbegleiter",
+  pflanze:
+    "A:Aloe,Akazie,Ahorn,Aster;B:Birke,Buche,Bambus,Basilikum;C:Chrysantheme,Christrose,Clematis;D:Distel,Dahlie,Douglasie;E:Eiche,Efeu,Erika,Erdbeere;F:Farn,Flieder,Fichte,Freesie;G:Gras,Ginster,Geranie,Gaensebluemchen;H:Hortensie,Hyazinthe,Hafer,Holunder;I:Iris,Immergruen,Ingwer;J:Jasmin,Johanniskraut,Jute;K:Kaktus,Klee,Kamille,Kirschbaum;L:Lavendel,Linde,Lilie,Loewenzahn;M:Moos,Mohn,Minze,Magnolie;N:Narzisse,Nelke,Nussbaum,Nachtkerze;O:Orchidee,Olivenbaum,Oleander;P:Palme,Petunie,Pfefferminze,Pappel;R:Rose,Rosmarin,Rhododendron,Ranunkel;S:Sonnenblume,Salbei,Schneegloeckchen,Salweide;T:Tulpe,Thymian,Tanne,Teebaum;U:Ulme,Usambaraveilchen;V:Veilchen,Vergissmeinnicht,Vanille;W:Weide,Wacholder,Weizen,Winterling;Z:Zypresse,Zinnie,Zitronenbaum",
+  essen:
+    "A:Apfelstrudel,Auflauf,Avocado,Antipasti;B:Brot,Burger,Bratwurst,Bohnen;C:Curry,Couscous,Chili,Croissant;D:Doener,Donut,Dampfnudel;E:Eintopf,Eier,Erbsensuppe,Enchilada;F:Fisch,Frikadelle,Falafel,Fritten;G:Gulasch,Gnocchi,Gemuese,Griessbrei;H:Hamburger,Honig,Huhn,Hummus;I:Involtini,Instantnudeln;J:Joghurt,Jambalaya;K:Kuchen,Kartoffeln,Kaese,Kebab;L:Lasagne,Lachs,Linsen,Leberkaese;M:Muesli,Maultaschen,Marmelade,Mais;N:Nudeln,Nachos,Nuss,Nugget;O:Omelett,Oliven,Obstsalat;P:Pizza,Pommes,Pfannkuchen,Paella;R:Reis,Rouladen,Risotto,Ravioli;S:Suppe,Salat,Spaghetti,Schnitzel;T:Toast,Tacos,Tofu,Tiramisu;U:Ungarische Gulaschsuppe,Ueberbackenes;V:Vanillepudding,Vollkornbrot;W:Waffeln,Wurst,Wrap,Weintrauben;Z:Zwiebelsuppe,Zucchini,Zimtschnecke",
+  farbe:
+    "A:Azurblau,Anthrazit,Apricot,Aquamarin;B:Blau,Beige,Braun,Bordeaux;C:Cyan,Champagner,Chamois;D:Dunkelblau,Dunkelgruen,Dattelbraun;E:Elfenbein,Erdbraun,Eisblau;F:Feuerrot,Flieder,Fuchsia;G:Gruen,Gelb,Grau,Gold;H:Himmelblau,Hellblau,Honiggelb;I:Indigo,Iridium;J:Jadegruen,Jeansblau;K:Karminrot,Khaki,Kobaltblau,Koralle;L:Lila,Lavendel,Limette,Lachs;M:Magenta,Mint,Mokka,Mausgrau;N:Nachtblau,Natur,Nussbraun;O:Orange,Olivgruen,Ocker;P:Pink,Petrol,Purpur,Pastellgelb;R:Rot,Rosa,Rubinrot,Rostbraun;S:Schwarz,Silber,Smaragdgruen,Senfgelb;T:Tuerkis,Tannengruen,Taupe;U:Ultramarin,Umbra;V:Violett,Vanille;W:Weiss,Waldgruen,Weinrot;Z:Zitronengelb,Zyan,Zinnoberrot",
+  marke:
+    "A:Adidas,Apple,Amazon,Audi;B:BMW,Bosch,Burger King,Barilla;C:Coca-Cola,Chanel,Canon,Converse;D:Diesel,Dell,Douglas,Duplo;E:Esprit,Edeka,Ebay,Ergo;F:Ferrero,Ford,Fila,Fanta;G:Google,Gucci,Gillette,Granini;H:Haribo,Huawei,Hugo Boss,Hilfiger;I:Ikea,Intel,Instagram,Iglo;J:Jack Wolfskin,Jaguar,Jacobs;K:Kellogs,KFC,Kia,Knorr;L:Lego,Levis,Lidl,Lacoste;M:McDonalds,Microsoft,Milka,Mercedes;N:Nike,Nivea,Nintendo,Netflix;O:Opel,Oral-B,Otto,Oreo;P:Puma,Pepsi,Philips,Persil;R:Ravensburger,Rewe,Red Bull,Rolex;S:Samsung,Sony,Sprite,Starbucks;T:Tesla,Toyota,Tchibo,Timberland;U:Uber,Under Armour,Unilever;V:Volkswagen,Vans,Vodafone,Volvo;W:WMF,Wrangler,Whatsapp;Z:Zara,Zalando,Zewa",
+  band:
+    "A:ABBA,AC/DC,Adele,Aerosmith;B:Beatles,Beyonce,Blur,Bon Jovi;C:Coldplay,Cro,Clueso,Chris Brown;D:Depeche Mode,Drake,Die Aerzte,Deichkind;E:Eminem,Ed Sheeran,Elton John,Europe;F:Fanta Vier,Foo Fighters,Fettes Brot;G:Gorillaz,Green Day,Genesis,Gzuz;H:Helene Fischer,Herbert Groenemeyer,Haftbefehl;I:Imagine Dragons,INXS,Iron Maiden;J:Joris,Justin Bieber,Jay-Z,Juli;K:Kraftwerk,Kings of Leon,Kraftklub;L:Linkin Park,Lady Gaga,Lana Del Rey;M:Metallica,Madonna,Muse,Mark Forster;N:Nirvana,Nena,Nickelback,Nico Santos;O:Oasis,OneRepublic,Outkast;P:Pink Floyd,Prince,Pur,Placebo;R:Rammstein,Rihanna,Radiohead,Revolverheld;S:Seeed,Sportfreunde Stiller,Sia,Sting;T:Toten Hosen,Tokio Hotel,The Weeknd;U:U2,Udo Lindenberg,Usher;V:Van Halen,Vampire Weekend;W:Wanda,Westernhagen,Wu-Tang Clan;Z:ZZ Top,Zaz,Zoe Wees",
+  film:
+    "A:Avatar,Avengers,Aladdin,Alien;B:Batman,Braveheart,Bambi,Barbie;C:Casablanca,Cars,Coco,Chicago;D:Dirty Dancing,Dune,Django,Der Pate;E:Ella,Everest,Extraction;F:Frozen,Fight Club,Fluch der Karibik;G:Gladiator,Ghostbusters,Gremlins;H:Harry Potter,Hercules,Hangover;I:Inception,Interstellar,Ice Age;J:Jurassic Park,Joker,James Bond;K:King Kong,Kung Fu Panda,Knives Out;L:Leon,Lion King,La La Land;M:Matrix,Mulan,Minions,Mamma Mia;N:Nemo,Nightcrawler,Notting Hill;O:Oppenheimer,Oblivion,Onward;P:Pulp Fiction,Pinocchio,Parasite;R:Rocky,Ratatouille,Rambo;S:Shrek,Spiderman,Star Wars,Shining;T:Titanic,Toy Story,Terminator,Tenet;U:Up,Underworld,Unbroken;V:Venom,Vaiana,Vertigo;W:WALL-E,Wonder Woman,Whiplash;Z:Zoomania,Zodiac,Zombieland",
+  serie:
+    "A:Arrow,American Horror Story,Alf;B:Breaking Bad,Big Bang Theory,Black Mirror;C:Chernobyl,Cobra Kai,Criminal Minds;D:Dark,Dexter,Downton Abbey,Doctor Who;E:Euphoria,Emily in Paris,Elite;F:Friends,Family Guy,Fargo,Flash;G:Game of Thrones,Gilmore Girls,Greys Anatomy;H:House of Cards,How I Met Your Mother,Haus des Geldes;I:Invincible,Industry;J:Jericho,Jack Ryan;K:King of Queens,Kobra uebernehmen Sie;L:Lost,Lucifer,Legion;M:Mad Men,Modern Family,Mr. Robot;N:Narcos,Naruto,New Girl;O:One Piece,Ozark,Outlander;P:Peaky Blinders,Prison Break,Pokemon;R:Rick and Morty,Riverdale,Raumschiff Enterprise;S:Simpsons,Stranger Things,Sherlock,Suits;T:The Office,True Detective,Tatort;U:Umbrella Academy,Unbelievable;V:Vikings,Vampire Diaries;W:Westworld,Walking Dead,Wednesday;Z:Zoo,Zorro",
+  sport:
+    "A:American Football,Angeln,Aerobic,Akrobatik;B:Basketball,Boxen,Badminton,Biathlon;C:Curling,Cricket,Crossfit,Canyoning;D:Dart,Diskuswerfen,Dressurreiten;E:Eishockey,Eiskunstlauf,Eisschnelllauf;F:Fussball,Fechten,Fallschirmspringen;G:Golf,Gewichtheben,Geraeteturnen;H:Handball,Hockey,Hochsprung,Huerdenlauf;I:Inlineskaten,Ironman;J:Judo,Joggen,Jiu-Jitsu,Jonglieren;K:Karate,Klettern,Kanu,Kickboxen;L:Laufen,Leichtathletik,Langlauf;M:Marathon,Motocross,Mountainbiken;N:Netzball,Nordic Walking;O:Orientierungslauf,Olympisches Turnen;P:Parkour,Polo,Poolbillard;R:Rudern,Radfahren,Reiten,Rugby;S:Schwimmen,Skifahren,Segeln,Squash;T:Tennis,Tischtennis,Turnen,Triathlon;U:Ultimate Frisbee,Unterwasserrugby;V:Volleyball,Voltigieren;W:Wandern,Wasserball,Windsurfen;Z:Zumba,Zehnkampf",
+  koerperteil:
+    "A:Arm,Auge,Achsel,Augenbraue;B:Bein,Bauch,Brust,Bizeps;C:Cornea;D:Daumen,Darm,Damm;E:Ellbogen,Elle,Extremitaet;F:Fuss,Finger,Ferse,Fussnagel;G:Gesicht,Gehirn,Gelenk,Gaumen;H:Hand,Haut,Herz,Huefte;I:Iris,Innenohr;J:Jochbein,Jugularvene;K:Kopf,Knie,Kinn,Knochen;L:Lunge,Leber,Lippe,Lid;M:Mund,Magen,Muskel,Milz;N:Nase,Nacken,Niere,Nagel;O:Ohr,Oberschenkel,Oberarm;P:Po,Pupille,Pulsader;R:Ruecken,Rippe,Rachen;S:Schulter,Schienbein,Stirn,Sehne;T:Tibia,Trizeps,Trommelfell;U:Unterarm,Unterschenkel,Uvula;V:Vene,Venenklappe;W:Wade,Wirbelsaeule,Wimper;Z:Zahn,Zunge,Zeh,Zwerchfell",
+  gegenstand:
+    "A:Auto,Anker,Ampel,Akku;B:Buch,Ball,Besen,Brille;C:Computer,CD,Couch;D:Dose,Decke,Drucker,Draht;E:Eimer,Eisenbahn,Etui;F:Flasche,Fernseher,Fahrrad,Feuerzeug;G:Glas,Gabel,Gitarre,Geldbeutel;H:Hammer,Handy,Hut,Handtuch;I:Igelball,Infrarotlampe;J:Jacke,Joystick,Jalousie;K:Kissen,Kamm,Koffer,Kerze;L:Lampe,Loeffel,Leiter,Lineal;M:Messer,Mikrofon,Muelleimer,Maus;N:Nagel,Nadel,Notizbuch;O:Ordner,Ofen,Ohrring;P:Pinsel,Papier,Pfanne,Puppe;R:Regal,Radio,Rucksack,Rasierer;S:Stuhl,Schere,Schluessel,Schirm;T:Tisch,Tasse,Teller,Taschenlampe;U:Uhr,Untertasse,USB-Stick;V:Vase,Ventilator,Videokamera;W:Wecker,Waschmaschine,Wasserkocher;Z:Zange,Zettel,Zahnbuerste",
+  kleidung:
+    "A:Anzug,Anorak,Armband;B:Bluse,Badehose,Blazer,Bademantel;C:Cardigan,Chinos,Cape;D:Dirndl,Daunenjacke,Dreiteiler;E:Ehering,Einteiler;F:Fliege,Frack,Fleecejacke;G:Guertel,Gummistiefel,Gamaschen;H:Hose,Hemd,Handschuhe,Hut;I:Inlett,Islaenderpullover;J:Jacke,Jeans,Jogginghose,Jumpsuit;K:Kleid,Kappe,Krawatte,Kapuzenpulli;L:Latzhose,Lederjacke,Leggings;M:Mantel,Muetze,Minirock;N:Nachthemd,Nadelstreifenanzug;O:Overall,Ohrenschuetzer;P:Pullover,Poncho,Pyjama,Parka;R:Rock,Regenjacke,Regenmantel;S:Schal,Socken,Schuhe,Shirt;T:T-Shirt,Trikot,Trenchcoat,Top;U:Unterhose,Unterhemd,Uniform;V:Veste,Volantrock;W:Weste,Windjacke,Wollpullover;Z:Zylinder,Zipphoodie",
+  automarke:
+    "A:Audi,Alfa Romeo,Aston Martin,Acura;B:BMW,Bentley,Bugatti,Buick;C:Chevrolet,Citroen,Chrysler,Cupra;D:Dacia,Dodge,Daihatsu,DS;E:Eagle,Edsel,Elaris;F:Ford,Fiat,Ferrari;G:Genesis,GMC,Geely;H:Honda,Hyundai,Hummer;I:Infiniti,Isuzu,Iveco;J:Jaguar,Jeep;K:Kia,KTM,Koenigsegg;L:Lamborghini,Lexus,Land Rover,Lancia;M:Mercedes,Mazda,Mini,Maserati;N:Nissan,Nio;O:Opel,Oldsmobile;P:Porsche,Peugeot,Polestar,Pontiac;R:Renault,Rolls-Royce,Rivian;S:Seat,Skoda,Subaru,Suzuki;T:Toyota,Tesla,Tata;V:Volkswagen,Volvo,Vauxhall;W:Wiesmann,Wartburg;Z:Zastava",
+  getraenk:
+    "A:Apfelsaft,Ayran,Aperol,Absinth;B:Bier,Buttermilch,Bubble Tea;C:Cola,Cocktail,Cappuccino,Cidre;D:Dosenbier,Dortmunder;E:Espresso,Eistee,Energydrink;F:Fanta,Fruchtsaft,Federweisser;G:Gin,Gluehwein,Grapefruitsaft;H:Heisse Schokolade,Hugo,Holunderschorle;I:Ingwertee,Irish Coffee;J:Johannisbeersaft,Jaegermeister;K:Kaffee,Kakao,Kirschsaft,Kombucha;L:Limonade,Latte Macchiato,Likoer;M:Milch,Mineralwasser,Mojito,Matcha;N:Nektar,Nesquik;O:Orangensaft,Ouzo;P:Pfefferminztee,Prosecco,Punsch;R:Rotwein,Rum,Radler;S:Saft,Sekt,Smoothie,Sprite;T:Tee,Tequila,Tonic;U:Uludag,Ungarwein;V:Vodka,Vanillemilch;W:Wasser,Wein,Whisky,Weizenbier;Z:Zitronenlimonade,Zirbenschnaps",
+  hobby:
+    "A:Angeln,Aquarellmalen,Astronomie;B:Basteln,Backen,Bouldern,Bloggen;C:Camping,Chorsingen,Cosplay;D:Dart,Drachensteigen,Darten;E:Essen gehen,Einradfahren;F:Fotografieren,Fussball,Filme schauen;G:Gaming,Gaertnern,Gitarre spielen;H:Haekeln,Handball,Heimwerken;I:Instrument lernen,Inlineskaten;J:Joggen,Jonglieren,Jodeln;K:Kochen,Klettern,Kino,Karten spielen;L:Lesen,Laufen,Lego bauen;M:Malen,Musik hoeren,Modellbau;N:Naehen,Nordic Walking;O:Origami,Orgel spielen;P:Puzzeln,Podcasten,Programmieren;R:Reisen,Radfahren,Reiten;S:Schwimmen,Singen,Skaten,Schach;T:Tanzen,Toepfern,Tauchen;U:Ukulele spielen,Urban Gardening;V:Volleyball,Vogelbeobachtung;W:Wandern,Werken,Wakeboarden;Z:Zeichnen,Zaubern,Zumba",
+  schulfach:
+    "A:Astronomie,Arbeitslehre,Altgriechisch;B:Biologie,BWL,Bildende Kunst;C:Chemie,Chinesisch,Chor;D:Deutsch,Darstellendes Spiel;E:Englisch,Erdkunde,Ethik,Elektrotechnik;F:Franzoesisch,Foerderunterricht,Fotografie;G:Geschichte,Geografie,Gemeinschaftskunde;H:Hauswirtschaft,Handarbeit;I:Informatik,Italienisch;J:Japanisch,Jura;K:Kunst,Kochen,Katholische Religion;L:Latein,Lebenskunde,Literatur;M:Mathematik,Musik,Medienkunde;N:Naturwissenschaften,Niederlaendisch;O:Orchester,Oekologie;P:Physik,Politik,Psychologie,Paedagogik;R:Religion,Rechnungswesen,Russisch;S:Sport,Sozialkunde,Spanisch,Statistik;T:Technik,Theater,Textilarbeit;U:Umweltkunde,Unterrichtsprojekt;V:Verkehrserziehung,Volkswirtschaft;W:Werken,Wirtschaft,Wahlpflicht;Z:Zeichnen,Zweite Fremdsprache",
+  superheld:
+    "A:Aquaman,Ant-Man,Avengers,Alfred;B:Batman,Black Panther,Black Widow;C:Captain America,Catwoman,Cyclops;D:Deadpool,Doctor Strange,Daredevil;E:Elektra,Elastigirl;F:Flash,Falcon,Fantastic Four;G:Green Lantern,Groot,Gamora;H:Hulk,Hawkeye,Hellboy;I:Iron Man,Invisible Woman;J:Jessica Jones,Joker;K:Kick-Ass,Kitty Pryde;L:Loki,Luke Cage;M:Magneto,Mystique,Moon Knight;N:Nightwing,Nick Fury;O:Optimus Prime,Odin;P:Professor X,Punisher,Phoenix;R:Robin,Rogue,Rocket;S:Superman,Spiderman,Storm,Scarlet Witch;T:Thor,Thanos,Two-Face;U:Ultron,Ulysses;V:Venom,Vision;W:Wonder Woman,Wolverine,Wasp;Z:Zatanna,Zoom",
+  spiel:
+    "A:Activity,Azul,Abalone;B:Backgammon,Blackjack,Bingo;C:Catan,Cluedo,Codenames,Carcassonne;D:Dame,Domino,Dobble,Dixit;E:Elfer raus,Exit-Spiel;F:Fifa,Fangen,Flunkyball;G:Gluecksrad,Go,Gaia Project;H:Halma,Hangman,Hearthstone;I:Ich packe meinen Koffer,Isle of Skye;J:Jenga,Jassen,Jungle Speed;K:Kniffel,Kalaha,Krimidinner;L:Ludo,Labyrinth,Looping Louie;M:Monopoly,Mikado,Mau-Mau;N:Muehle,Nintendo Switch Sports;O:Oceans,Ohanami;P:Poker,Pantomime,Pandemic;R:Risiko,Romme,Rummikub;S:Schach,Scrabble,Skat,Siedler;T:Tabu,Tetris,Twister,Trivial Pursuit;U:Uno,Ubongo;V:Vier gewinnt,Verstecken;W:Werwolf,Wizard,Wahrheit oder Pflicht;Z:Zicke Zacke,Zug um Zug",
+  instrument:
+    "A:Akkordeon,Alphorn,Altsaxophon;B:Bass,Banjo,Blockfloete,Bratsche;C:Cello,Cembalo,Cajon,Clavichord;D:Dudelsack,Didgeridoo,Drums;E:E-Gitarre,E-Bass,Euphonium;F:Floete,Fagott,Fluegel;G:Gitarre,Geige,Gong;H:Harfe,Horn,Hackbrett,Handpan;I:Idiophon,Irish Bouzouki;J:Jagdhorn,Jazzgitarre;K:Klavier,Klarinette,Keyboard,Kontrabass;L:Laute,Leier,Lyra;M:Mandoline,Marimba,Mundharmonika;N:Nyckelharpa,Naturhorn;O:Orgel,Oboe,Okarina;P:Posaune,Panfloete,Pauke,Piano;R:Rassel,Rahmentrommel;S:Schlagzeug,Saxophon,Sitar,Synthesizer;T:Trompete,Trommel,Triangel,Tuba;U:Ukulele,Udu;V:Violine,Vibraphon,Viola;W:Waldhorn,Waschbrett;Z:Zither,Zimbel",
+  suessigkeit:
+    "A:Apfelringe,After Eight;B:Bonbon,Brausepulver,Butterkeks;C:Cookies,Cornflakes-Riegel;D:Duplo,Donauwelle,Dominostein;E:Eis,Erdnussflips,Esspapier;F:Fruchtgummi,Fudge;G:Gummibaerchen,Gebrannte Mandeln;H:Haribo,Honigkuchen,Hanuta;I:Ingwerbonbon,Iris-Bonbon;J:Jelly Beans,Joghurtgums;K:Kaugummi,Kekse,Kinderriegel,Karamell;L:Lakritz,Lutscher,Lebkuchen,Lolli;M:Marshmallow,Milka,Marzipan,Mandelsplitter;N:Nougat,Nutella,Nussecke;O:Oreo,Osterei;P:Praline,Popcorn,Pfefferminz;R:Raffaello,Riegel,Rocher;S:Schokolade,Schaumkuss,Snickers;T:Toffifee,Traubenzucker,Twix;U:Ueberraschungsei;V:Vanilleeis,Vollmilchschokolade;W:Waffel,Weingummi,Werthers;Z:Zuckerwatte,Zimtstern",
+  moebel:
+    "A:Aktenschrank,Anrichte,Armlehnstuhl;B:Bett,Bank,Buecherregal,Barhocker;C:Couch,Chaiselongue,Computertisch;D:Diwan,Doppelbett;E:Esstisch,Eckbank,Eckschrank;F:Fernsehtisch,Fussbank;G:Garderobe,Gartenstuhl,Glastisch;H:Hocker,Hochbett,Haengeschrank;I:Intarsienschrank,Ikea-Regal;J:Jugendbett,Jalousieschrank;K:Kommode,Kleiderschrank,Kinderbett;L:Liege,Lattenrost,Lowboard;M:Matratze,Massivholztisch;N:Nachttisch,Nussbaumschrank;O:Ottomane,Ordnerregal;P:Polstersessel,Pult,Paravent;R:Regal,Rollcontainer,Rattansessel;S:Sofa,Sessel,Schrank,Schreibtisch;T:Tisch,Truhe,Theke;U:Untergestell,Umkleidespiegel;V:Vitrine,Vorratsschrank;W:Wandregal,Waschtisch,Wickelkommode;Z:Zeitungsstaender,Zweisitzer",
+  insel:
+    "A:Amrum,Aruba,Azoren;B:Bali,Borkum,Bornholm,Barbados;C:Capri,Cebu,Curacao;D:Dominica,Djerba;E:Elba,Euboea;F:Fehmarn,Fidschi,Formentera;G:Gran Canaria,Gotland,Guadeloupe;H:Hawaii,Hiddensee,Helgoland;I:Ibiza,Island,Irland;J:Java,Jamaika,Juist;K:Kreta,Korfu,Kuba,Kos;L:Langeoog,Lanzarote,Lesbos;M:Mallorca,Madeira,Malta,Madagaskar;N:Norderney,Neuseeland,Nantucket;O:Okinawa,Oahu,Oesel;P:Phuket,Pellworm,Puerto Rico;R:Ruegen,Rhodos,Reunion;S:Sylt,Sardinien,Sizilien,Samos;T:Teneriffa,Tasmanien,Tahiti;U:Usedom,Unst;V:Vancouver Island,Vis;W:Wangerooge,Wight;Z:Zypern,Zakynthos",
+  hauptstadt:
+    "A:Athen,Amsterdam,Ankara,Algier;B:Berlin,Bruessel,Budapest,Bern;C:Canberra,Caracas,Colombo;D:Dublin,Doha,Damaskus,Daressalam;E:Edinburgh,Eriwan;F:Freetown,Funafuti;G:Georgetown,Guatemala-Stadt;H:Helsinki,Havanna,Hanoi;I:Islamabad,Isfahan;J:Jakarta,Jerewan;K:Kopenhagen,Kairo,Kiew,Kabul;L:London,Lissabon,Luxemburg,Lima;M:Madrid,Moskau,Manila,Mexiko-Stadt;N:Nairobi,Neu-Delhi,Nikosia;O:Oslo,Ottawa;P:Paris,Prag,Peking,Pretoria;R:Rom,Riad,Riga,Reykjavik;S:Stockholm,Sofia,Seoul,Santiago;T:Tokio,Teheran,Tunis,Tallinn;U:Ulaanbaatar;V:Valletta,Vaduz,Vilnius;W:Warschau,Wellington,Washington,Wien;Z:Zagreb,Zuerich",
+  videospiel:
+    "A:Among Us,Assassins Creed,Angry Birds;B:Battlefield,Bloodborne,Brawl Stars;C:Call of Duty,Counter-Strike,Candy Crush;D:Doom,Diablo,Dark Souls,Destiny;E:Elden Ring,Everquest,Escape from Tarkov;F:Fortnite,FIFA,Far Cry,Fall Guys;G:GTA,God of War,Gears of War;H:Halo,Hogwarts Legacy,Hades;I:It Takes Two,Infamous;J:Just Dance,Journey;K:Kingdom Hearts,Katamari;L:League of Legends,Left 4 Dead,Last of Us;M:Minecraft,Mario Kart,Mass Effect;N:Need for Speed,NBA 2K;O:Overwatch,Outlast,Oblivion;P:Pokemon,Pac-Man,Portal,Pubg;R:Rocket League,Roblox,Red Dead Redemption;S:Sims,Super Mario,Starcraft,Subnautica;T:Tetris,Tomb Raider,Titanfall;U:Uncharted,Undertale;V:Valorant,Valheim;W:World of Warcraft,Witcher;Z:Zelda,Zuma",
+  werkzeug:
+    "A:Akkuschrauber,Axt,Ahle;B:Bohrer,Beitel,Buegelsaege;C:Cuttermesser,Cliptang;D:Dremel,Drehmomentschluessel;E:Eisensaege,Exzenterschleifer;F:Feile,Flex,Fuchsschwanz;G:Gabelschluessel,Gummihammer;H:Hammer,Hobel,Heissklebepistole;I:Inbusschluessel,Industriesauger;J:Japansaege,Justierschraube;K:Kneifzange,Kelle,Kreissaege;L:Lotkolben,Locheisen,Leiter;M:Meissel,Massband,Multitool;N:Nagelzieher,Nietzange;O:Oelkanne,Ofenrohrzange;P:Pinsel,Puksaege,Poliermaschine;R:Rohrzange,Raspel,Rollmassband;S:Schraubenzieher,Saege,Schraubstock,Spachtel;T:Trennschleifer,Tacker;U:Universalzange,Umlenkrolle;V:Vorschlaghammer,Vielzweckzange;W:Wasserwaage,Winkelschleifer,Werkbank;Z:Zange,Zollstock,Zwinge",
+  gefuehl:
+    "A:Angst,Aerger,Aufregung,Abscheu;B:Begeisterung,Beklemmung,Bewunderung;C:Coolness,Chaos;D:Dankbarkeit,Demut,Distanz;E:Ekel,Eifersucht,Erleichterung,Euphorie;F:Freude,Furcht,Frustration,Fernweh;G:Glueck,Geborgenheit,Genugtuung;H:Hass,Hoffnung,Heimweh,Hilflosigkeit;I:Interesse,Ironie;J:Jubel,Jaehzorn;K:Kummer,Kribbeln,Kontrollverlust;L:Liebe,Langeweile,Leidenschaft;M:Mitleid,Mut,Melancholie,Misstrauen;N:Neid,Nervositaet,Neugier;O:Optimismus,Ohnmacht;P:Panik,Peinlichkeit,Passion;R:Reue,Ruhe,Respekt;S:Stolz,Scham,Sehnsucht,Schuld;T:Trauer,Trotz,Tatendrang;U:Ueberraschung,Unsicherheit,Unruhe;V:Verliebtheit,Verzweiflung,Vorfreude;W:Wut,Wehmut,Wohlbefinden;Z:Zufriedenheit,Zorn,Zuversicht",
+  generic:
+    "A:Anker,Abend,Ausflug,Ameise,Antenne;B:Berg,Baum,Brille,Blume,Brunnen;C:Computer,Chaos,Chance,Couch;D:Dach,Dorf,Decke,Drache,Dose;E:Eimer,Eisen,Ecke,Erde,Engel;F:Feder,Fenster,Feuer,Freund,Farbe;G:Garten,Glas,Garage,Gipfel,Geschenk;H:Haus,Himmel,Hafen,Hund,Hammer;I:Insel,Idee,Igel,Instrument;J:Jacke,Jahr,Jubel,Juwel;K:Koffer,Kerze,Kiste,Katze,Kabel;L:Lampe,Licht,Leiter,Loch,Lied;M:Mond,Meer,Motor,Muenze,Markt;N:Nacht,Nadel,Nebel,Nest,Norden;O:Ofen,Ozean,Ordner,Oase;P:Papier,Platz,Pfeil,Punkt,Palme;R:Regen,Rad,Ring,Raum,Rakete;S:Sonne,Stern,Stein,Schatten,Stadt;T:Turm,Tasche,Tuer,Traum,Teppich;U:Ufer,Uhr,Umzug,Urlaub;V:Vogel,Vase,Ventil,Vorhang;W:Wind,Wald,Wolke,Wasser,Weg;Z:Zug,Zaun,Zelt,Ziel,Zucker",
+};
+
+const cache = new Map<string, Record<string, string[]>>();
+
+/** Word banks produced at runtime (custom categories) live here. */
+const runtimeBanks = new Map<string, Record<string, string[]>>();
+
+function parse(raw: string): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const group of raw.split(";")) {
+    const idx = group.indexOf(":");
+    if (idx < 0) continue;
+    const letter = group.slice(0, idx).trim().toUpperCase();
+    out[letter] = group
+      .slice(idx + 1)
+      .split(",")
+      .map((w) => w.trim())
+      .filter(Boolean);
+  }
+  return out;
+}
+
+export function getBank(key: string): Record<string, string[]> | null {
+  if (runtimeBanks.has(key)) return runtimeBanks.get(key)!;
+  if (cache.has(key)) return cache.get(key)!;
+  const raw = RAW[key];
+  if (!raw) return null;
+  const parsed = parse(raw);
+  cache.set(key, parsed);
+  return parsed;
+}
+
+/** Registers a bank produced at runtime (e.g. by the Claude API) for a custom category. */
+export function registerBank(key: string, words: Record<string, string[]>) {
+  const normalized: Record<string, string[]> = {};
+  for (const [letter, list] of Object.entries(words)) {
+    normalized[letter.toUpperCase()] = list.map((w) => String(w).trim()).filter(Boolean);
+  }
+  runtimeBanks.set(key, normalized);
+}
+
+export function hasBank(key: string | null | undefined): boolean {
+  return !!key && (!!RAW[key] || runtimeBanks.has(key));
+}
+
+export const BANK_KEYS = Object.keys(RAW).filter((k) => k !== "generic");
+
+/** Words for a letter in a bank. Empty when the bank has nothing for it. */
+export function wordsFor(bankKey: string | null | undefined, letter: string): string[] {
+  const bank = bankKey ? getBank(bankKey) : null;
+  return bank?.[letter.toUpperCase()] ?? [];
+}
+
+export function genericWords(letter: string): string[] {
+  return getBank("generic")?.[letter.toUpperCase()] ?? [];
+}
