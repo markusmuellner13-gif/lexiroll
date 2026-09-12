@@ -3,13 +3,14 @@ import type { Lang } from "../i18n/types";
 export const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 /**
- * Letters worth throwing out, per language. Italian simply has no native
- * J, K, W, X or Y; German and English just find these painful.
+ * Letters worth throwing out, per language. Italian has no native J, K, W, X
+ * or Y, and no common noun starts with H; German and English just find theirs
+ * painful.
  */
 export const HARD_LETTERS: Record<Lang, string[]> = {
   de: ["Q", "X", "Y", "C"],
   en: ["Q", "X", "Y", "Z"],
-  it: ["J", "K", "W", "X", "Y"],
+  it: ["H", "J", "K", "W", "X", "Y"],
 };
 
 export function hardLetters(lang: Lang): string[] {

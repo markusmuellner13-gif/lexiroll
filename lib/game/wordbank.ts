@@ -68,13 +68,19 @@ export function hasBank(lang: Lang, key: string | null | undefined): boolean {
 /** Every built-in slug, minus the generic fallback pool. */
 export const BANK_KEYS = Object.keys(deBanks).filter((k) => k !== "generic");
 
-/** Words for a letter in a bank. Empty when the bank has nothing for it. */
+/**
+ * Words for a letter in a bank.
+ *
+ * A gap inside a bank the language owns is a real gap - Italian simply has no
+ * cities starting with H, and the bot should draw a blank rather than answer
+ * "Hamburg" in an Italian game. Only a category this language does not know at
+ * all (one set up by a player in another language) borrows from elsewhere.
+ */
 export function wordsFor(lang: Lang, bankKey: string | null | undefined, letter: string): string[] {
   if (!bankKey) return [];
   const bank = getBank(lang, bankKey);
-  const hit = bank?.[letter.toUpperCase()];
-  if (hit?.length) return hit;
-  // A category the player set up in another language still deserves an answer.
+  if (bank) return bank[letter.toUpperCase()] ?? [];
+
   for (const other of LANGS) {
     if (other === lang) continue;
     const fallback = getBank(other, bankKey)?.[letter.toUpperCase()];

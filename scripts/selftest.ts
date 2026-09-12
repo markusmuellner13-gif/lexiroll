@@ -65,6 +65,16 @@ for (const [lang, input, expected] of matches) {
   check(`[${lang}] "${input}" -> ${expected ?? "unknown"}`, got === expected, `got ${got}`);
 }
 
+// Bots must never answer in another language just because their own bank has a
+// gap: Italian has no city starting with H, so the answer is nothing.
+check(
+  "no cross-language leak inside a known category",
+  wordsFor("it", "city", "H").length === 0,
+  wordsFor("it", "city", "H").join(","),
+);
+// A category set up in another language does borrow, though.
+check("unknown-here categories borrow words", wordsFor("it", "videogame", "F").length > 0);
+
 // A German label still resolves inside an English room, and the other way round.
 check("cross-language fallback", resolveBank("en", "Tier") === "animal", `${resolveBank("en", "Tier")}`);
 
