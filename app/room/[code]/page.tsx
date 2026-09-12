@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ code: string }>;
 }): Promise<Metadata> {
   const { code } = await params;
-  return { title: `Raum ${code.toUpperCase()}` };
+  return { title: `Room ${code.toUpperCase()}` };
 }
 
 export default async function Page({ params }: { params: Promise<{ code: string }> }) {

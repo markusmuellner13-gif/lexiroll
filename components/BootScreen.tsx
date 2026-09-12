@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/i18n/provider";
 import { Mark } from "./Logo";
 
 /**
@@ -9,15 +10,16 @@ import { Mark } from "./Logo";
  * never on client-side navigation.
  */
 export function BootScreen() {
+  const { t } = useLang();
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("wj-booted")) {
+    if (sessionStorage.getItem("lx-booted")) {
       setGone(true);
       return;
     }
-    sessionStorage.setItem("wj-booted", "1");
+    sessionStorage.setItem("lx-booted", "1");
     const a = setTimeout(() => setLeaving(true), 520);
     const b = setTimeout(() => setGone(true), 1000);
     return () => {
@@ -45,9 +47,9 @@ export function BootScreen() {
         </div>
         <div className="text-center">
           <div className="text-3xl font-extrabold tracking-tight">
-            Wort<span className="text-lime">jagd</span>
+            Lexi<span className="text-lime">roll</span>
           </div>
-          <div className="mt-1 text-sm text-muted">Stadt · Land · Fluss</div>
+          <div className="mt-1 text-sm text-muted">{t.tagline}</div>
         </div>
         <div className="mt-2 h-1 w-32 overflow-hidden rounded-full bg-white/10">
           <div className="h-full w-1/3 animate-loader rounded-full bg-lime" />

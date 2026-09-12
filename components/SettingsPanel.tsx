@@ -1,7 +1,8 @@
 "use client";
 
 import type { GameSettings } from "@/lib/game/types";
-import { HARD_LETTERS } from "@/lib/game/letters";
+import { hardLetters } from "@/lib/game/letters";
+import { useLang } from "@/lib/i18n/provider";
 import { Card, SegmentedControl, Stepper, Toggle } from "./ui";
 
 export function SettingsPanel({
@@ -15,38 +16,41 @@ export function SettingsPanel({
   disabled?: boolean;
   showDifficulty?: boolean;
 }) {
+  const { t } = useLang();
   const patch = (p: Partial<GameSettings>) => onChange({ ...settings, ...p });
+  const hard = hardLetters(settings.lang);
+  const noTimer = settings.roundSeconds === 0;
 
   if (disabled) {
     return (
       <Card className="flex flex-wrap gap-2 p-4 text-sm text-muted">
-        <span>{settings.rounds} Runden</span>
+        <span>{t.settings.summaryRounds(settings.rounds)}</span>
         <span>·</span>
-        <span>{settings.roundSeconds === 0 ? "ohne Zeitlimit" : `${settings.roundSeconds}s pro Runde`}</span>
+        <span>{noTimer ? t.settings.summaryNoTime : t.settings.summaryTime(settings.roundSeconds)}</span>
         <span>·</span>
-        <span>{settings.allowStop ? "Stopp erlaubt" : "kein Stopp"}</span>
+        <span>{settings.allowStop ? t.settings.summaryStop : t.settings.summaryNoStop}</span>
       </Card>
     );
   }
 
   return (
     <Card className="space-y-4 p-4">
-      <h3 className="text-sm font-bold tracking-wide text-muted uppercase">Spielregeln</h3>
+      <h3 className="text-sm font-bold tracking-wide text-muted uppercase">{t.settings.title}</h3>
 
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm font-semibold">Runden</span>
+        <span className="text-sm font-semibold">{t.settings.rounds}</span>
         <Stepper value={settings.rounds} min={1} max={20} onChange={(rounds) => patch({ rounds })} />
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm font-semibold">Zeit pro Runde</span>
+        <span className="text-sm font-semibold">{t.settings.timePerRound}</span>
         <Stepper
           value={settings.roundSeconds}
           min={0}
           max={300}
           step={15}
           onChange={(roundSeconds) =>
-            // Without a clock, Stopp is the only thing that can end a round.
+            // Without a clock, Stop is the only thing that can end a round.
             patch(roundSeconds === 0 ? { roundSeconds, allowStop: true } : { roundSeconds })
           }
           format={(v) => (v === 0 ? "∞" : `${v}s`)}
@@ -55,14 +59,14 @@ export function SettingsPanel({
 
       {showDifficulty ? (
         <div className="space-y-2">
-          <span className="text-sm font-semibold">Bot-Stärke</span>
+          <span className="text-sm font-semibold">{t.settings.botStrength}</span>
           <SegmentedControl
             value={settings.botDifficulty}
             onChange={(botDifficulty) => patch({ botDifficulty })}
             options={[
-              { value: "chill", label: "Chillig" },
-              { value: "normal", label: "Normal" },
-              { value: "brutal", label: "Brutal" },
+              { value: "chill", label: t.settings.chill },
+              { value: "normal", label: t.settings.normal },
+              { value: "brutal", label: t.settings.brutal },
             ]}
           />
         </div>
@@ -72,27 +76,23 @@ export function SettingsPanel({
         <Toggle
           checked={settings.allowStop}
           onChange={(allowStop) => {
-            if (settings.roundSeconds === 0) return; // nothing else would end the round
+            if (noTimer) return; // nothing else would end the round
             patch({ allowStop });
           }}
-          label="Stopp-Knopf"
-          hint={
-            settings.roundSeconds === 0
-              ? "Ohne Zeitlimit unverzichtbar — sonst endet die Runde nie."
-              : "Wer zuerst alles ausfüllt, beendet die Runde für alle."
-          }
+          label={t.settings.stopButton}
+          hint={noTimer ? t.settings.stopHintForced : t.settings.stopHint}
         />
         <Toggle
           checked={settings.soloBonus}
           onChange={(soloBonus) => patch({ soloBonus })}
-          label="20 Punkte für Einzelkämpfer"
-          hint="Als Einzige(r) mit einer Antwort gibt es doppelt."
+          label={t.settings.soloBonus}
+          hint={t.settings.soloBonusHint}
         />
         <Toggle
-          checked={HARD_LETTERS.every((l) => settings.excludedLetters.includes(l))}
-          onChange={(on) => patch({ excludedLetters: on ? [...HARD_LETTERS] : [] })}
-          label="Fiese Buchstaben raus"
-          hint={`Ohne ${HARD_LETTERS.join(", ")}.`}
+          checked={hard.every((l) => settings.excludedLetters.includes(l))}
+          onChange={(on) => patch({ excludedLetters: on ? [...hard] : [] })}
+          label={t.settings.hardLetters}
+          hint={t.settings.hardLettersHint(hard.join(", "))}
         />
       </div>
     </Card>

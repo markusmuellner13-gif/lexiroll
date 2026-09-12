@@ -9,9 +9,9 @@ function normalizeCode(raw: string): string {
 }
 
 function fail(err: unknown) {
-  if (err instanceof RoomError) return NextResponse.json({ error: err.message }, { status: err.status });
+  if (err instanceof RoomError) return NextResponse.json({ error: err.code }, { status: err.status });
   console.error("room request failed", err);
-  return NextResponse.json({ error: "Da ist etwas schiefgelaufen." }, { status: 500 });
+  return NextResponse.json({ error: "GENERIC" }, { status: 500 });
 }
 
 export async function GET(request: Request, ctx: { params: Promise<{ code: string }> }) {
@@ -29,7 +29,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ code: stri
   const { code } = await ctx.params;
   try {
     const body = (await request.json()) as { playerId?: string; name?: string; emoji?: string };
-    if (!body.playerId) return NextResponse.json({ error: "playerId fehlt." }, { status: 400 });
+    if (!body.playerId) return NextResponse.json({ error: "GENERIC" }, { status: 400 });
     const normalized = normalizeCode(code);
     await joinRoom(normalized, {
       id: body.playerId.slice(0, 64),

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLang } from "@/lib/i18n/provider";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -177,6 +178,7 @@ export function Stepper({
   onChange: (v: number) => void;
   format?: (v: number) => string;
 }) {
+  const { t } = useLang();
   return (
     <div className="flex items-center gap-3">
       <button
@@ -184,7 +186,7 @@ export function Stepper({
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-lg font-bold disabled:opacity-30"
-        aria-label="weniger"
+        aria-label={t.settings.less}
       >
         −
       </button>
@@ -196,7 +198,7 @@ export function Stepper({
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-lg font-bold disabled:opacity-30"
-        aria-label="mehr"
+        aria-label={t.settings.more}
       >
         +
       </button>

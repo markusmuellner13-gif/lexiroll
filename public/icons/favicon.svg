@@ -6,8 +6,8 @@
   </linearGradient></defs>
     <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#tile)"/>
     
-  <path d="M28 40l11.5 44h11L64 52.5 77.5 84h11L100 40H88.5l-6 26.5L70 40h-12L45.5 66.5 39.5 40z" fill="#07060f"/>
-  <circle cx="34" cy="100" r="5.5" fill="#07060f"/>
-  <circle cx="64" cy="100" r="5.5" fill="#07060f" fill-opacity="0.55"/>
-  <circle cx="94" cy="100" r="5.5" fill="#07060f" fill-opacity="0.3"/>
+  <path d="M40 30h19v37h31v19H40z" fill="#07060f"/>
+  <circle cx="34" cy="101" r="5.5" fill="#07060f"/>
+  <circle cx="64" cy="101" r="5.5" fill="#07060f" fill-opacity="0.55"/>
+  <circle cx="94" cy="101" r="5.5" fill="#07060f" fill-opacity="0.3"/>
   </svg>

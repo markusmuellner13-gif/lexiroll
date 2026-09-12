@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { RoomState } from "@/lib/rooms";
-import type { Action } from "@/lib/rooms";
+import type { Action, RoomState } from "@/lib/rooms";
 import type { Answers, GameSettings } from "@/lib/game/types";
 import { hydrateCachedBanks, useBotTraining } from "@/lib/botbanks";
+import { useLang } from "@/lib/i18n/provider";
+import type { ErrorCode } from "@/lib/i18n/types";
 import { loadProfile, recordGame, type Profile } from "@/lib/storage";
 import { AnswerSheet } from "./AnswerSheet";
 import { CategoryEditor } from "./CategoryEditor";
 import { FinalSheet } from "./FinalSheet";
+import { LangSwitch } from "./LangSwitch";
 import { LetterDice } from "./LetterDice";
 import { Mark } from "./Logo";
 import { ResultsSheet } from "./ResultsSheet";
@@ -23,9 +25,10 @@ const POLL_SLOW = 2400;
 
 export function RoomGame({ code }: { code: string }) {
   const router = useRouter();
+  const { t, lang } = useLang();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [state, setState] = useState<RoomState | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorCode | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [now, setNow] = useState(() => Date.now());
   const [copied, setCopied] = useState(false);
@@ -56,6 +59,9 @@ export function RoomGame({ code }: { code: string }) {
     }
   }, []);
 
+  const asCode = (value: unknown): ErrorCode =>
+    typeof value === "string" && value in t.errors ? (value as ErrorCode) : "GENERIC";
+
   const call = useCallback(
     async (action: Action) => {
       if (!profile) return;
@@ -67,14 +73,15 @@ export function RoomGame({ code }: { code: string }) {
         });
         const data = await res.json();
         if (!res.ok) {
-          setError((data as { error?: string }).error ?? "Aktion fehlgeschlagen.");
+          setError(asCode((data as { error?: string }).error));
           return;
         }
         if (action.type !== "leave") apply(data as RoomState);
       } catch {
-        setError("Keine Verbindung. Versuche es nochmal.");
+        setError("NO_CONNECTION");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [code, profile, apply],
   );
 
@@ -83,26 +90,6 @@ export function RoomGame({ code }: { code: string }) {
     if (!profile) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
-
-    const join = async () => {
-      try {
-        const res = await fetch(`/api/rooms/${code}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ playerId: profile.id, name: profile.name, emoji: profile.emoji }),
-        });
-        const data = await res.json();
-        if (!alive) return;
-        if (!res.ok) {
-          setError((data as { error?: string }).error ?? "Raum nicht gefunden.");
-          return;
-        }
-        apply(data as RoomState);
-        poll();
-      } catch {
-        if (alive) setError("Keine Verbindung zum Raum.");
-      }
-    };
 
     const poll = async () => {
       try {
@@ -118,13 +105,33 @@ export function RoomGame({ code }: { code: string }) {
       timer = setTimeout(poll, phase === "playing" ? POLL_SLOW : POLL_FAST);
     };
 
+    const join = async () => {
+      try {
+        const res = await fetch(`/api/rooms/${code}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ playerId: profile.id, name: profile.name, emoji: profile.emoji }),
+        });
+        const data = await res.json();
+        if (!alive) return;
+        if (!res.ok) {
+          setError(asCode((data as { error?: string }).error));
+          return;
+        }
+        apply(data as RoomState);
+        poll();
+      } catch {
+        if (alive) setError("NO_CONNECTION");
+      }
+    };
+
     join();
     return () => {
       alive = false;
       clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, code, apply]);
-
 
   // Local clock for the countdown.
   useEffect(() => {
@@ -136,24 +143,32 @@ export function RoomGame({ code }: { code: string }) {
   useEffect(() => {
     if (state?.phase !== "playing" || submitted.current) return;
     const id = setTimeout(() => {
-      if (Object.keys(answersRef.current).length) void call({ type: "draft", answers: answersRef.current });
+      if (Object.keys(answersRef.current).length) {
+        void call({ type: "draft", answers: answersRef.current });
+      }
     }, 1600);
     return () => clearTimeout(id);
   }, [answers, state?.phase, call]);
 
-  const learning = useBotTraining(state?.settings.categories ?? [], (updates) => {
-    setState((s) => {
-      if (!s) return s;
-      const map = new Map(updates.map((u) => [u.id, u.bank]));
-      return {
-        ...s,
-        settings: {
-          ...s.settings,
-          categories: s.settings.categories.map((c) => (map.has(c.id) ? { ...c, bank: map.get(c.id)! } : c)),
-        },
-      };
-    });
-  });
+  const learning = useBotTraining(
+    state?.settings.lang ?? lang,
+    state?.settings.categories ?? [],
+    (updates) => {
+      setState((s) => {
+        if (!s) return s;
+        const map = new Map(updates.map((u) => [u.id, u.bank]));
+        return {
+          ...s,
+          settings: {
+            ...s.settings,
+            categories: s.settings.categories.map((c) =>
+              map.has(c.id) ? { ...c, bank: map.get(c.id)! } : c,
+            ),
+          },
+        };
+      });
+    },
+  );
 
   const me = state?.players.find((p) => p.id === profile?.id) ?? null;
   const isHost = !!state && !!profile && state.hostId === profile.id;
@@ -164,9 +179,9 @@ export function RoomGame({ code }: { code: string }) {
   );
 
   const share = async () => {
-    const text = `Spiel Wortjagd mit mir! Raum-Code: ${code}`;
+    const text = t.room.shareText(code);
     if (navigator.share) {
-      await navigator.share({ title: "Wortjagd", text, url: shareUrl }).catch(() => {});
+      await navigator.share({ title: "Lexiroll", text, url: shareUrl }).catch(() => {});
       return;
     }
     await navigator.clipboard.writeText(`${text}\n${shareUrl}`).catch(() => {});
@@ -189,7 +204,7 @@ export function RoomGame({ code }: { code: string }) {
     if (serverNow() >= state.round.deadline) submit(false);
   }, [now, state, submit, serverNow]);
 
-  // Record the solo-stats line once when a game ends.
+  // Record the stats line once when a game ends.
   useEffect(() => {
     if (state?.phase !== "final" || recorded.current || !me) return;
     recorded.current = true;
@@ -202,9 +217,9 @@ export function RoomGame({ code }: { code: string }) {
       <div className="shell grid min-h-[100svh] place-items-center">
         <Card className="max-w-sm space-y-4 p-6 text-center">
           <div className="text-4xl">🫥</div>
-          <p className="font-semibold">{error}</p>
+          <p className="font-semibold">{t.errors[error]}</p>
           <Button full onClick={() => router.push("/play")}>
-            Zurück
+            {t.common.back}
           </Button>
         </Card>
       </div>
@@ -222,7 +237,7 @@ export function RoomGame({ code }: { code: string }) {
   }
 
   const { settings, players, round, review, result, phase } = state;
-  const roundLabel = `Runde ${round?.no ?? state.roundNo}/${settings.rounds}`;
+  const roundLabel = t.common.round(round?.no ?? state.roundNo, settings.rounds);
 
   // ------------------------------------------------------------------- lobby
 
@@ -236,28 +251,29 @@ export function RoomGame({ code }: { code: string }) {
               await call({ type: "leave" });
               router.push("/play");
             }}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/8 text-lg"
-            aria-label="Raum verlassen"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/8 text-lg"
+            aria-label={t.room.leave}
           >
             ←
           </button>
-          <h1 className="text-2xl font-extrabold">Lobby</h1>
+          <h1 className="min-w-0 flex-1 truncate text-2xl font-extrabold">{t.room.lobby}</h1>
+          <LangSwitch />
         </div>
 
         <Card className="space-y-3 p-5 text-center">
-          <div className="text-xs font-bold tracking-wide text-muted uppercase">Raum-Code</div>
+          <div className="text-xs font-bold tracking-wide text-muted uppercase">{t.room.code}</div>
           <div className="text-[clamp(2.75rem,16vw,4.5rem)] leading-none font-extrabold tracking-[0.18em] text-lime">
             {code}
           </div>
           <Button variant="secondary" full onClick={share}>
-            {copied ? "Link kopiert ✓" : "Freunde einladen"}
+            {copied ? t.room.copied : t.room.invite}
           </Button>
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
-              Spieler ({players.length})
+              {t.room.players(players.length)}
             </h2>
             {isHost ? (
               <div className="flex gap-2">
@@ -267,7 +283,7 @@ export function RoomGame({ code }: { code: string }) {
                   disabled={!players.some((p) => p.kind === "bot")}
                   className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold disabled:opacity-30"
                 >
-                  − Bot
+                  {t.room.removeBot}
                 </button>
                 <button
                   type="button"
@@ -275,7 +291,7 @@ export function RoomGame({ code }: { code: string }) {
                   disabled={players.length >= 10}
                   className="rounded-full bg-lime/20 px-3 py-1 text-xs font-bold text-lime disabled:opacity-30"
                 >
-                  + Bot
+                  {t.room.addBot}
                 </button>
               </div>
             ) : null}
@@ -286,18 +302,18 @@ export function RoomGame({ code }: { code: string }) {
                 <span className="text-xl">{p.emoji}</span>
                 <span className="min-w-0 flex-1 truncate font-semibold">
                   {p.name}
-                  {p.id === profile.id ? " (du)" : ""}
+                  {p.id === profile.id ? ` ${t.room.you}` : ""}
                 </span>
-                {p.isHost ? <Chip tone="lime">Host</Chip> : null}
-                {p.kind === "bot" ? <Chip tone="cyan">Bot</Chip> : null}
-                {p.kind === "human" && !p.connected ? <Chip>offline</Chip> : null}
+                {p.isHost ? <Chip tone="lime">{t.common.host}</Chip> : null}
+                {p.kind === "bot" ? <Chip tone="cyan">{t.common.bot}</Chip> : null}
+                {p.kind === "human" && !p.connected ? <Chip>{t.common.offline}</Chip> : null}
                 {isHost && p.id !== profile.id && p.kind === "human" ? (
                   <button
                     type="button"
                     onClick={() => call({ type: "kick", playerId: p.id })}
                     className="text-xs font-semibold text-muted hover:text-magenta"
                   >
-                    kick
+                    {t.room.kick}
                   </button>
                 ) : null}
               </li>
@@ -306,6 +322,7 @@ export function RoomGame({ code }: { code: string }) {
         </Card>
 
         <CategoryEditor
+          lang={settings.lang}
           categories={settings.categories}
           disabled={!isHost}
           learning={learning}
@@ -321,11 +338,11 @@ export function RoomGame({ code }: { code: string }) {
 
         {isHost ? (
           <Button full size="lg" onClick={() => call({ type: "start" })} disabled={players.length < 2}>
-            {players.length < 2 ? "Warte auf Mitspieler…" : "Spiel starten 🎲"}
+            {players.length < 2 ? t.room.needPlayers : t.room.start}
           </Button>
         ) : (
           <div className="rounded-2xl bg-white/8 py-4 text-center text-sm font-semibold text-muted">
-            Warte auf den Host…
+            {t.room.waitHost}
           </div>
         )}
       </div>
@@ -340,16 +357,19 @@ export function RoomGame({ code }: { code: string }) {
       return (
         <div className="shell grid min-h-[100svh] place-items-center">
           <div className="flex flex-col items-center gap-6 text-center">
-            <div className="text-sm font-semibold text-muted">{roundLabel}</div>
+            <div className="text-sm font-semibold text-muted">
+              {t.common.roundLong(round.no, settings.rounds)}
+            </div>
             <LetterDice letter={round.letter} excluded={settings.excludedLetters} rollMs={2200} />
-            <div className="text-lg font-bold">Buchstabe wird gewürfelt…</div>
+            <div className="text-lg font-bold">{t.common.rolling}</div>
           </div>
         </div>
       );
     }
 
-    const stopper = round.stoppedBy ? players.find((p) => p.id === round.stoppedBy) ?? null : null;
-    const msLeft = round.deadline === null ? null : round.deadline - serverNow();
+    const stopper = round.stoppedBy
+      ? (players.find((p) => p.id === round.stoppedBy) ?? null)
+      : null;
 
     return (
       <AnswerSheet
@@ -360,7 +380,7 @@ export function RoomGame({ code }: { code: string }) {
         onSubmit={submit}
         locked={submitted.current || round.locked.includes(profile.id)}
         allowStop={settings.allowStop}
-        msLeft={msLeft}
+        msLeft={round.deadline === null ? null : round.deadline - serverNow()}
         totalMs={settings.roundSeconds > 0 ? settings.roundSeconds * 1000 : null}
         players={players}
         progress={round.progress}
@@ -373,7 +393,6 @@ export function RoomGame({ code }: { code: string }) {
   // ------------------------------------------------------------------ voting
 
   if (phase === "voting" && round && review) {
-    const secondsLeft = Math.max(0, Math.ceil((review.endsAt - serverNow()) / 1000));
     return (
       <ReviewSheet
         categories={settings.categories}
@@ -383,7 +402,7 @@ export function RoomGame({ code }: { code: string }) {
         vetoes={review.vetoes}
         myId={profile.id}
         confirmed={review.confirmed}
-        secondsLeft={secondsLeft}
+        secondsLeft={Math.max(0, Math.ceil((review.endsAt - serverNow()) / 1000))}
         roundLabel={roundLabel}
         onVeto={(target, on) => call({ type: "veto", target, on })}
         onConfirm={() => call({ type: "confirmVote" })}
@@ -401,9 +420,9 @@ export function RoomGame({ code }: { code: string }) {
         result={result}
         roundLabel={roundLabel}
         canAdvance={isHost}
-        nextLabel="Nächste Runde 🎲"
+        nextLabel={t.results.next}
         onNext={() => call({ type: "next" })}
-        waitingFor="Der Host startet die nächste Runde…"
+        waitingFor={t.results.waitHost}
       />
     );
   }
@@ -419,10 +438,7 @@ export function RoomGame({ code }: { code: string }) {
           void call({ type: "restart" });
         }}
         extra={
-          <Card className="p-4 text-center text-sm text-muted">
-            Raum <span className="font-bold text-paper">{code}</span> bleibt offen — der Host kann
-            eine Revanche starten.
-          </Card>
+          <Card className="p-4 text-center text-sm text-muted">{t.final.roomStays(code)}</Card>
         }
       />
     );
@@ -434,9 +450,9 @@ export function RoomGame({ code }: { code: string }) {
         <div className="animate-pulse">
           <Mark size={56} />
         </div>
-        <p className="text-sm text-muted">Synchronisiere…</p>
+        <p className="text-sm text-muted">{t.common.syncing}</p>
         <Link href="/" className="text-xs text-muted underline">
-          Abbrechen
+          {t.common.cancel}
         </Link>
       </div>
     </div>

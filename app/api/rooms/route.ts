@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       settings?: unknown;
     };
     if (!body.playerId || typeof body.playerId !== "string") {
-      return NextResponse.json({ error: "playerId fehlt." }, { status: 400 });
+      return NextResponse.json({ error: "GENERIC" }, { status: 400 });
     }
     const code = await createRoom({
       playerId: body.playerId.slice(0, 64),
@@ -29,9 +29,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ code });
   } catch (err) {
     if (err instanceof RoomError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
+      return NextResponse.json({ error: err.code }, { status: err.status });
     }
     console.error("create room failed", err);
-    return NextResponse.json({ error: "Raum konnte nicht erstellt werden." }, { status: 500 });
+    return NextResponse.json({ error: "GENERIC" }, { status: 500 });
   }
 }

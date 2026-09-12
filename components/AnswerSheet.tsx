@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { Answers, Category, Player } from "@/lib/game/types";
 import { startsWithLetter } from "@/lib/game/scoring";
+import { useLang } from "@/lib/i18n/provider";
 import { Button } from "./ui";
 
 export function AnswerSheet({
@@ -34,6 +35,7 @@ export function AnswerSheet({
   stoppedBy: Player | null;
   roundLabel: string;
 }) {
+  const { t } = useLang();
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export function AnswerSheet({
 
       {stoppedBy ? (
         <div className="bg-magenta/90 py-2 text-center text-sm font-bold text-white">
-          {stoppedBy.emoji} {stoppedBy.name} hat gestoppt — Stifte fallen lassen!
+          {t.play.stoppedBy(`${stoppedBy.emoji} ${stoppedBy.name}`)}
         </div>
       ) : null}
 
@@ -136,7 +138,7 @@ export function AnswerSheet({
                 />
                 {wrong ? (
                   <span className="absolute right-3 bottom-2 text-xs font-bold text-magenta">
-                    beginnt nicht mit {letter}
+                    {t.play.wrongLetter(letter)}
                   </span>
                 ) : null}
               </label>
@@ -151,19 +153,19 @@ export function AnswerSheet({
       >
         <div className="shell flex items-center gap-3 py-3">
           <div className="min-w-0 flex-1 text-sm font-semibold text-muted tabular-nums">
-            {filled}/{categories.length} ausgefüllt
+            {t.play.filled(filled, categories.length)}
           </div>
           {locked ? (
             <div className="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-muted">
-              Abgegeben — warte auf die anderen…
+              {t.play.submitted}
             </div>
           ) : allowStop && allFilled ? (
             <Button variant="danger" size="lg" onClick={() => onSubmit(true)}>
-              STOPP!
+              {t.play.stop}
             </Button>
           ) : (
             <Button variant="secondary" size="lg" onClick={() => onSubmit(false)}>
-              Abgeben
+              {t.play.submit}
             </Button>
           )}
         </div>

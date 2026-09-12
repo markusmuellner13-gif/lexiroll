@@ -2,7 +2,7 @@ import type { Answers, Category, GameSettings, RoundResult, ScoredAnswer } from 
 
 export const POINTS = { solo: 20, unique: 10, duplicate: 5, invalid: 0 } as const;
 
-/** Fold umlauts so "Köln" and "Koeln" are the same answer. */
+/** Fold umlauts and accents so "Köln"/"Koeln" and "città"/"citta" match. */
 export function foldWord(word: string): string {
   return word
     .trim()
@@ -11,15 +11,23 @@ export function foldWord(word: string): string {
     .replace(/ö/g, "oe")
     .replace(/ü/g, "ue")
     .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]/g, "");
 }
 
-/** Ä counts for A, Ö for O, Ü for U - the way everyone plays it at the kitchen table. */
+/**
+ * Ä counts for A, È for E and so on - the way everyone plays it at the kitchen
+ * table, in every language.
+ */
 export function startsWithLetter(word: string, letter: string): boolean {
-  const first = word.trim().charAt(0).toLowerCase();
-  const target = letter.toLowerCase();
-  const folded = first === "ä" ? "a" : first === "ö" ? "o" : first === "ü" ? "u" : first;
-  return folded === target;
+  const first = word
+    .trim()
+    .charAt(0)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  return first === letter.toLowerCase();
 }
 
 export function isFormallyValid(word: string, letter: string): boolean {

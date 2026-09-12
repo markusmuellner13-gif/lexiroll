@@ -1,8 +1,8 @@
 {
-  "name": "wortjagd",
+  "name": "lexiroll",
   "version": "1.0.0",
   "private": true,
-  "description": "Wortjagd - Stadt Land Fluss neu gewuerfelt. Solo gegen Bots oder online mit Freunden.",
+  "description": "Lexiroll - roll a letter, fill the board. Stadt Land Fluss solo against bots or online with friends, in English, German and Italian.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

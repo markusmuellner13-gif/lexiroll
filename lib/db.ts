@@ -97,11 +97,11 @@ export async function ensureSchema(): Promise<Client | null> {
   return c;
 }
 
-export async function getBankCache(key: string): Promise<Record<string, string[]> | null> {
+export async function getBankCache(lang: string, key: string): Promise<Record<string, string[]> | null> {
   const c = await ensureSchema().catch(() => null);
   if (!c || !key) return null;
   try {
-    const res = await c.execute({ sql: "SELECT bank FROM word_banks WHERE key = ?", args: [key] });
+    const res = await c.execute({ sql: "SELECT bank FROM word_banks WHERE key = ?", args: [`${lang}:${key}`] });
     const row = res.rows[0];
     return row ? (JSON.parse(String(row.bank)) as Record<string, string[]>) : null;
   } catch {
@@ -109,13 +109,13 @@ export async function getBankCache(key: string): Promise<Record<string, string[]
   }
 }
 
-export async function putBankCache(key: string, label: string, bank: Record<string, string[]>) {
+export async function putBankCache(lang: string, key: string, label: string, bank: Record<string, string[]>) {
   const c = await ensureSchema().catch(() => null);
   if (!c || !key) return;
   try {
     await c.execute({
       sql: "INSERT OR REPLACE INTO word_banks (key, label, bank, created_at) VALUES (?, ?, ?, ?)",
-      args: [key, label, JSON.stringify(bank), Date.now()],
+      args: [`${lang}:${key}`, label, JSON.stringify(bank), Date.now()],
     });
   } catch {
     /* caching is best effort */

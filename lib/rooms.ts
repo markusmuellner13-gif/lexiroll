@@ -4,8 +4,8 @@ import { answersAt, makeBots, planBotRound, type BotPlan } from "./game/bots";
 import { rollLetter } from "./game/letters";
 import { scoreRound, type VetoMap } from "./game/scoring";
 import type { Answers, GameSettings, Phase, Player, RoundResult } from "./game/types";
-import { DEFAULT_SETTINGS } from "./game/types";
-import { DEFAULT_CATEGORIES } from "./game/categories";
+import { defaultSettings } from "./game/defaults";
+import { isLang, type ErrorCode } from "./i18n/types";
 
 /** Everyone must stop this long after someone hits Stopp. */
 const STOP_GRACE_MS = 3000;
@@ -48,8 +48,8 @@ export type RoomState = {
 };
 
 export class RoomError extends Error {
-  constructor(message: string, readonly status = 400) {
-    super(message);
+  constructor(readonly code: ErrorCode, readonly status = 400) {
+    super(code);
   }
 }
 
@@ -62,14 +62,14 @@ function newCode(): string {
 
 async function client(): Promise<Client> {
   const c = await ensureSchema();
-  if (!c) throw new RoomError("Online-Modus ist nicht konfiguriert (keine Datenbank verbunden).", 503);
+  if (!c) throw new RoomError("NO_DB", 503);
   return c;
 }
 
 function sanitizeSettings(raw: unknown): GameSettings {
-  const base: GameSettings = { ...DEFAULT_SETTINGS, categories: DEFAULT_CATEGORIES.map((c) => ({ ...c })) };
-  if (!raw || typeof raw !== "object") return base;
-  const s = raw as Partial<GameSettings>;
+  const s = (raw && typeof raw === "object" ? raw : {}) as Partial<GameSettings>;
+  const lang = isLang(s.lang) ? s.lang : "en";
+  const base = defaultSettings(lang);
   const categories = Array.isArray(s.categories)
     ? s.categories
         .filter((c) => c && typeof c.name === "string" && c.name.trim())
@@ -83,6 +83,7 @@ function sanitizeSettings(raw: unknown): GameSettings {
     : base.categories;
   const roundSeconds = clampInt(s.roundSeconds, 0, 600, base.roundSeconds);
   return {
+    lang,
     categories: categories.length ? categories : base.categories,
     rounds: clampInt(s.rounds, 1, 20, base.rounds),
     roundSeconds,
@@ -106,7 +107,7 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number): number 
 
 export function cleanName(name: unknown): string {
   const n = String(name ?? "").trim().replace(/\s+/g, " ").slice(0, 18);
-  return n || "Gast";
+  return n || "Guest";
 }
 
 export function cleanEmoji(emoji: unknown): string {
@@ -144,16 +145,16 @@ export async function createRoom(opts: {
     ]);
     return code;
   }
-  throw new RoomError("Konnte keinen freien Raumcode finden. Nochmal versuchen.", 500);
+  throw new RoomError("CODE_FAILED", 500);
 }
 
 export async function joinRoom(code: string, player: { id: string; name: string; emoji: string }) {
   const c = await client();
   const now = Date.now();
   const room = await c.execute({ sql: "SELECT * FROM rooms WHERE code = ?", args: [code] });
-  if (!room.rows.length) throw new RoomError("Diesen Raum gibt es nicht (mehr).", 404);
+  if (!room.rows.length) throw new RoomError("ROOM_NOT_FOUND", 404);
   if (now - Number(room.rows[0].created_at) > ROOM_TTL_MS) {
-    throw new RoomError("Dieser Raum ist abgelaufen.", 410);
+    throw new RoomError("ROOM_EXPIRED", 410);
   }
 
   const existing = await c.execute({
@@ -172,9 +173,9 @@ export async function joinRoom(code: string, player: { id: string; name: string;
     sql: "SELECT COUNT(*) AS n FROM players WHERE room_code = ?",
     args: [code],
   });
-  if (Number(count.rows[0].n) >= 10) throw new RoomError("Der Raum ist voll (10 Spieler).", 409);
+  if (Number(count.rows[0].n) >= 10) throw new RoomError("ROOM_FULL", 409);
   if (String(room.rows[0].phase) !== "lobby") {
-    throw new RoomError("Die Runde läuft schon - warte, bis sie vorbei ist.", 409);
+    throw new RoomError("GAME_RUNNING", 409);
   }
 
   await c.execute({
@@ -217,7 +218,7 @@ async function loadPlayers(c: Client, code: string): Promise<Player[]> {
 
 async function loadRoom(c: Client, code: string): Promise<RoomRow> {
   const res = await c.execute({ sql: "SELECT * FROM rooms WHERE code = ?", args: [code] });
-  if (!res.rows.length) throw new RoomError("Diesen Raum gibt es nicht (mehr).", 404);
+  if (!res.rows.length) throw new RoomError("ROOM_NOT_FOUND", 404);
   const r = res.rows[0];
   return {
     code: String(r.code),
@@ -586,18 +587,18 @@ export async function applyAction(code: string, playerId: string, action: Action
   const players = await loadPlayers(c, code);
   const settings = sanitizeSettings(JSON.parse(room.settings));
   const me = players.find((p) => p.id === playerId);
-  if (!me) throw new RoomError("Du bist nicht in diesem Raum.", 403);
+  if (!me) throw new RoomError("NOT_IN_ROOM", 403);
   const isHost = room.host_id === playerId;
   const now = Date.now();
 
   const requireHost = () => {
-    if (!isHost) throw new RoomError("Nur der Host darf das.", 403);
+    if (!isHost) throw new RoomError("HOST_ONLY", 403);
   };
 
   switch (action.type) {
     case "settings": {
       requireHost();
-      if (room.phase !== "lobby") throw new RoomError("Einstellungen gehen nur in der Lobby.", 409);
+      if (room.phase !== "lobby") throw new RoomError("LOBBY_ONLY", 409);
       await c.execute({
         sql: "UPDATE rooms SET settings = ?, updated_at = ? WHERE code = ?",
         args: [JSON.stringify(sanitizeSettings(action.settings)), now, code],
@@ -607,12 +608,12 @@ export async function applyAction(code: string, playerId: string, action: Action
 
     case "addBot": {
       requireHost();
-      if (room.phase !== "lobby") throw new RoomError("Bots gehen nur in der Lobby.", 409);
-      if (players.length >= 10) throw new RoomError("Der Raum ist voll.", 409);
+      if (room.phase !== "lobby") throw new RoomError("LOBBY_ONLY", 409);
+      if (players.length >= 10) throw new RoomError("ROOM_FULL", 409);
       const taken = new Set(players.map((p) => p.name));
-      let bot = makeBots(1, settings.botDifficulty)[0];
-      for (let i = 0; i < 12 && taken.has(bot.name); i++) bot = makeBots(1, settings.botDifficulty)[0];
-      if (taken.has(bot.name)) throw new RoomError("Keine Bots mehr übrig.", 409);
+      let bot = makeBots(1, settings.botDifficulty, settings.lang)[0];
+      for (let i = 0; i < 12 && taken.has(bot.name); i++) bot = makeBots(1, settings.botDifficulty, settings.lang)[0];
+      if (taken.has(bot.name)) throw new RoomError("NO_BOTS_LEFT", 409);
       await c.execute({
         sql: `INSERT INTO players (room_code, id, name, emoji, kind, skill, pace, score, is_host, joined_at, last_seen)
               VALUES (?, ?, ?, ?, 'bot', ?, ?, 0, 0, ?, ?)`,
@@ -635,7 +636,7 @@ export async function applyAction(code: string, playerId: string, action: Action
 
     case "kick": {
       requireHost();
-      if (action.playerId === room.host_id) throw new RoomError("Der Host kann sich nicht kicken.", 400);
+      if (action.playerId === room.host_id) throw new RoomError("CANT_KICK_HOST", 400);
       await c.execute({
         sql: "DELETE FROM players WHERE room_code = ? AND id = ?",
         args: [code, action.playerId],
@@ -668,10 +669,10 @@ export async function applyAction(code: string, playerId: string, action: Action
     case "next": {
       requireHost();
       if (room.phase === "playing" || room.phase === "voting") {
-        throw new RoomError("Die Runde läuft noch.", 409);
+        throw new RoomError("ROUND_RUNNING", 409);
       }
-      if (room.phase === "final") throw new RoomError("Das Spiel ist vorbei.", 409);
-      if (players.length < 2) throw new RoomError("Mindestens 2 Spieler (Bots zählen mit).", 400);
+      if (room.phase === "final") throw new RoomError("GAME_OVER", 409);
+      if (players.length < 2) throw new RoomError("NEED_PLAYERS", 400);
       await startRound(c, room, players, settings);
       return;
     }
@@ -721,7 +722,7 @@ export async function applyAction(code: string, playerId: string, action: Action
       if (room.phase !== "voting") return;
       const target = String(action.target).slice(0, 120);
       if (!target || target === "__done__") return;
-      if (target.startsWith(`${playerId}:`)) throw new RoomError("Eigene Antworten kannst du nicht streichen.", 400);
+      if (target.startsWith(`${playerId}:`)) throw new RoomError("NO_OWN_VETO", 400);
       if (action.on) {
         await c.execute({
           sql: "INSERT OR IGNORE INTO vetoes (room_code, round_no, voter_id, target) VALUES (?, ?, ?, ?)",

@@ -2,6 +2,7 @@
 
 import type { Answers, Category, Player } from "@/lib/game/types";
 import { isFormallyValid, vetoKey } from "@/lib/game/scoring";
+import { useLang } from "@/lib/i18n/provider";
 import { Button, Chip } from "./ui";
 
 /**
@@ -33,6 +34,7 @@ export function ReviewSheet({
   secondsLeft: number | null;
   roundLabel: string;
 }) {
+  const { t } = useLang();
   const humans = players.filter((p) => p.kind === "human");
   const iAmDone = confirmed.includes(myId);
 
@@ -48,7 +50,7 @@ export function ReviewSheet({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-muted">{roundLabel}</div>
-            <div className="text-lg font-extrabold">Antworten prüfen</div>
+            <div className="text-lg font-extrabold">{t.review.title}</div>
           </div>
           {secondsLeft !== null ? (
             <Chip tone={secondsLeft <= 10 ? "magenta" : "neutral"}>{secondsLeft}s</Chip>
@@ -58,8 +60,7 @@ export function ReviewSheet({
 
       <main className="shell flex-1 space-y-4 py-5">
         <p className="text-sm text-muted">
-          Tippe auf eine Antwort, die du nicht gelten lässt. Gestrichen wird sie, wenn die Mehrheit
-          der Mitspieler zustimmt.
+          {t.review.hint}
         </p>
 
         {categories.map((category) => (
@@ -83,7 +84,7 @@ export function ReviewSheet({
                       {player.emoji}
                     </span>
                     <span className="w-20 shrink-0 truncate text-xs font-semibold text-muted">
-                      {mine ? "Du" : player.name}
+                      {mine ? t.common.you : player.name}
                     </span>
                     <span
                       className={`min-w-0 flex-1 truncate text-base font-semibold ${
@@ -93,7 +94,7 @@ export function ReviewSheet({
                       {word || "—"}
                     </span>
                     {formallyBad ? (
-                      <Chip tone="magenta">falscher Buchstabe</Chip>
+                      <Chip tone="magenta">{t.review.wrongLetter}</Chip>
                     ) : word && !mine ? (
                       <button
                         type="button"
@@ -102,7 +103,7 @@ export function ReviewSheet({
                           iVoted ? "bg-magenta text-white" : "bg-white/10 text-muted hover:bg-white/20"
                         }`}
                       >
-                        {iVoted ? `gestrichen${voters.length > 1 ? ` ×${voters.length}` : ""}` : "streichen"}
+                        {iVoted ? `${t.review.struck}${voters.length > 1 ? ` ×${voters.length}` : ""}` : t.review.strike}
                       </button>
                     ) : voters.length ? (
                       <Chip tone="magenta">×{voters.length}</Chip>
@@ -121,10 +122,10 @@ export function ReviewSheet({
       >
         <div className="shell flex items-center gap-3 py-3">
           <div className="min-w-0 flex-1 text-sm font-semibold text-muted">
-            {confirmed.length}/{humans.length} fertig
+            {t.review.progress(confirmed.length, humans.length)}
           </div>
           <Button size="lg" onClick={onConfirm} disabled={iAmDone}>
-            {iAmDone ? "Warte auf die anderen…" : "Passt so"}
+            {iAmDone ? t.review.waiting : t.review.done}
           </Button>
         </div>
       </footer>

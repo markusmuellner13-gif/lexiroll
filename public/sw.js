@@ -1,9 +1,9 @@
-/* Wortjagd service worker - keeps solo play working without a connection. */
-const VERSION = "wortjagd-v1";
+/* Lexiroll service worker - keeps solo play working without a connection. */
+const VERSION = "lexiroll-v1";
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
-const PRECACHE = ["/", "/solo", "/regeln", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const PRECACHE = ["/", "/solo", "/rules", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -1,14 +1,51 @@
 import { NextResponse } from "next/server";
 import { getBankCache, putBankCache } from "@/lib/db";
 import { normalize } from "@/lib/game/categories";
+import { hardLetters } from "@/lib/game/letters";
+import { ALPHABET } from "@/lib/game/letters";
+import { isLang, type Lang } from "@/lib/i18n/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MODEL = "claude-haiku-4-5-20251001";
-const LETTERS = "ABCDEFGHIJKLMNOPRSTUVWZ".split("");
 
 type Bank = Record<string, string[]>;
+
+/** One prompt per language, so the bots learn words people actually use. */
+const PROMPTS: Record<Lang, (category: string, letters: string) => string> = {
+  de: (category, letters) => `Wir spielen "Stadt Land Fluss" auf Deutsch. Die Kategorie lautet: "${category}".
+
+Nenne fuer JEDEN der folgenden Anfangsbuchstaben 3 kurze, allgemein bekannte deutsche Begriffe, die eindeutig in diese Kategorie passen und mit dem Buchstaben beginnen: ${letters}.
+
+Antworte AUSSCHLIESSLICH mit JSON in genau dieser Form, ohne Erklaerung, ohne Markdown:
+{"A":["...","...","..."],"B":["...","...","..."], ...}
+
+Wenn dir fuer einen Buchstaben nichts Passendes einfaellt, gib eine leere Liste zurueck. Erfinde keine Woerter.`,
+
+  en: (category, letters) => `We are playing the word game "Categories" (Stadt-Land-Fluss / Scattergories style) in English. The category is: "${category}".
+
+For EACH of the following starting letters, give 3 short, widely known English terms that clearly belong to this category and start with that letter: ${letters}.
+
+Reply with JSON ONLY, exactly in this shape, no explanation, no markdown:
+{"A":["...","...","..."],"B":["...","...","..."], ...}
+
+If nothing fits a letter, return an empty list for it. Do not invent words.`,
+
+  it: (category, letters) => `Stiamo giocando a "Nomi, cose, città" in italiano. La categoria è: "${category}".
+
+Per OGNI lettera iniziale seguente, indica 3 termini italiani brevi e comunemente noti che appartengono chiaramente a questa categoria e iniziano con quella lettera: ${letters}.
+
+Rispondi SOLO con JSON, esattamente in questa forma, senza spiegazioni e senza markdown:
+{"A":["...","...","..."],"B":["...","...","..."], ...}
+
+Se per una lettera non c'è nulla di adatto, restituisci una lista vuota. Non inventare parole.`,
+};
+
+function lettersFor(lang: Lang): string[] {
+  const skip = hardLetters(lang);
+  return ALPHABET.filter((l) => !skip.includes(l));
+}
 
 /**
  * Teaches the bots a category the player invented.
@@ -19,8 +56,10 @@ type Bank = Record<string, string[]>;
  */
 export async function POST(request: Request) {
   let names: string[] = [];
+  let lang: Lang = "en";
   try {
-    const body = (await request.json()) as { categories?: unknown };
+    const body = (await request.json()) as { categories?: unknown; lang?: unknown };
+    if (isLang(body.lang)) lang = body.lang;
     if (Array.isArray(body.categories)) {
       names = body.categories.map((c) => String(c).slice(0, 60)).filter(Boolean).slice(0, 12);
     }
@@ -33,34 +72,28 @@ export async function POST(request: Request) {
   const missing: string[] = [];
 
   for (const name of names) {
-    const cached = await getBankCache(normalize(name));
+    const cached = await getBankCache(lang, normalize(name));
     if (cached) banks[name] = cached;
     else missing.push(name);
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (missing.length && apiKey) {
-    const generated = await Promise.all(missing.map((name) => generateBank(name, apiKey)));
+    const generated = await Promise.all(missing.map((name) => generateBank(name, lang, apiKey)));
     for (let i = 0; i < missing.length; i++) {
       const bank = generated[i];
       if (!bank) continue;
       banks[missing[i]] = bank;
-      await putBankCache(normalize(missing[i]), missing[i], bank);
+      await putBankCache(lang, normalize(missing[i]), missing[i], bank);
     }
   }
 
   return NextResponse.json({ banks, generated: missing.length > 0 && !!apiKey });
 }
 
-async function generateBank(category: string, apiKey: string): Promise<Bank | null> {
-  const prompt = `Wir spielen "Stadt Land Fluss" auf Deutsch. Die Kategorie lautet: "${category}".
-
-Nenne fuer JEDEN der folgenden Anfangsbuchstaben 3 kurze, allgemein bekannte deutsche Begriffe, die eindeutig in diese Kategorie passen und mit dem Buchstaben beginnen: ${LETTERS.join(", ")}.
-
-Antworte AUSSCHLIESSLICH mit JSON in genau dieser Form, ohne Erklaerung, ohne Markdown:
-{"A":["...","...","..."],"B":["...","...","..."], ...}
-
-Wenn dir fuer einen Buchstaben nichts Passendes einfaellt, gib fuer diesen Buchstaben eine leere Liste zurueck. Erfinde keine Woerter.`;
+async function generateBank(category: string, lang: Lang, apiKey: string): Promise<Bank | null> {
+  const letters = lettersFor(lang);
+  const prompt = PROMPTS[lang](category, letters.join(", "));
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -91,7 +124,7 @@ Wenn dir fuer einen Buchstaben nichts Passendes einfaellt, gib fuer diesen Buchs
       if (!key || !Array.isArray(words)) continue;
       const cleaned = words
         .map((w) => String(w).trim())
-        .filter((w) => w.length > 1 && w.length < 40 && w.charAt(0).toUpperCase() === key)
+        .filter((w) => w.length > 1 && w.length < 40 && startsWith(w, key))
         .slice(0, 4);
       if (cleaned.length) bank[key] = cleaned;
     }
@@ -99,4 +132,9 @@ Wenn dir fuer einen Buchstaben nichts Passendes einfaellt, gib fuer diesen Buchs
   } catch {
     return null;
   }
+}
+
+function startsWith(word: string, letter: string): boolean {
+  const first = word.charAt(0).toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return first === letter;
 }

@@ -1,26 +1,71 @@
 {
-  "name": "Wortjagd — Stadt Land Fluss",
-  "short_name": "Wortjagd",
-  "description": "Stadt Land Fluss, neu gewürfelt: solo gegen schlaue Bots oder online mit Freunden. Eigene Kategorien, Buchstabenwürfel, Punktewertung.",
+  "name": "Lexiroll — City, Country, River",
+  "short_name": "Lexiroll",
+  "description": "Roll a letter, fill the board. The Stadt-Land-Fluss classic solo against clever bots or online with friends - your own categories, in English, German or Italian.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen"],
+  "display_override": [
+    "standalone",
+    "fullscreen"
+  ],
   "orientation": "portrait",
   "background_color": "#07060f",
   "theme_color": "#07060f",
-  "lang": "de",
+  "lang": "en",
   "dir": "ltr",
-  "categories": ["games", "education", "entertainment"],
+  "categories": [
+    "games",
+    "education",
+    "entertainment"
+  ],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Solo gegen Bots", "url": "/solo", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Mit Freunden", "url": "/play", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Solo vs bots",
+      "url": "/solo",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "With friends",
+      "url": "/play",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

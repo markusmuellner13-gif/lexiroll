@@ -1,6 +1,7 @@
 "use client";
 
 import type { Category, Player, RoundResult, ScoredAnswer } from "@/lib/game/types";
+import { useLang } from "@/lib/i18n/provider";
 import { Button, Card } from "./ui";
 
 const TONE: Record<ScoredAnswer["status"], string> = {
@@ -30,6 +31,7 @@ export function ResultsSheet({
   nextLabel: string;
   waitingFor?: string;
 }) {
+  const { t } = useLang();
   const byPlayer = new Map<string, Map<string, ScoredAnswer>>();
   for (const a of result.answers) {
     if (!byPlayer.has(a.playerId)) byPlayer.set(a.playerId, new Map());
@@ -46,14 +48,14 @@ export function ResultsSheet({
       <header className="shell pt-[calc(1.5rem+var(--safe-t))] pb-2 text-center">
         <div className="text-xs font-semibold text-muted">{roundLabel}</div>
         <h2 className="fluid-title mt-1 font-extrabold">
-          Buchstabe <span className="text-lime">{result.letter}</span>
+          {t.common.letter} <span className="text-lime">{result.letter}</span>
         </h2>
       </header>
 
       <main className="shell flex-1 space-y-5 py-4">
         <Card className="overflow-hidden">
           <h3 className="border-b border-white/10 px-4 py-3 text-sm font-bold tracking-wide text-muted uppercase">
-            Punkte diese Runde
+            {t.results.roundPoints}
           </h3>
           <ul className="divide-y divide-white/5">
             {roundRanked.map((p) => (
@@ -72,7 +74,7 @@ export function ResultsSheet({
           <table className="w-full min-w-[36rem] border-separate border-spacing-y-1.5">
             <thead>
               <tr className="text-left text-xs font-bold tracking-wide text-muted uppercase">
-                <th className="px-3 py-1">Kategorie</th>
+                <th className="px-3 py-1">{t.results.category}</th>
                 {players.map((p) => (
                   <th key={p.id} className="px-3 py-1">
                     <span className="mr-1">{p.emoji}</span>
@@ -118,7 +120,7 @@ export function ResultsSheet({
 
         <Card className="overflow-hidden">
           <h3 className="border-b border-white/10 px-4 py-3 text-sm font-bold tracking-wide text-muted uppercase">
-            Gesamtstand
+            {t.results.total}
           </h3>
           <ul className="divide-y divide-white/5">
             {ranked.map((p, i) => (
@@ -144,7 +146,7 @@ export function ResultsSheet({
             </Button>
           ) : (
             <div className="rounded-2xl bg-white/8 py-3.5 text-center text-sm font-semibold text-muted">
-              {waitingFor ?? "Warte auf den Host…"}
+              {waitingFor ?? t.results.waitGeneric}
             </div>
           )}
         </div>

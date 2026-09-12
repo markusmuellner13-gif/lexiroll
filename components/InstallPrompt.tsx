@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/i18n/provider";
 import { Button } from "./ui";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
-const DISMISSED = "wj-install-dismissed";
+const DISMISSED = "lx-install-dismissed";
 
 /**
  * Android/Chrome get the real install prompt; iOS gets the only thing Safari
- * allows - a short "Teilen -> Zum Home-Bildschirm" hint.
+ * allows - a short "Share -> Add to Home Screen" hint.
  */
 export function InstallPrompt() {
+  const { t } = useLang();
   const [deferred, setDeferred] = useState<InstallEvent | null>(null);
   const [iosHint, setIosHint] = useState(false);
   const [hidden, setHidden] = useState(true);
@@ -30,8 +32,7 @@ export function InstallPrompt() {
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
 
-    const ua = navigator.userAgent;
-    const isIos = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
     if (isIos) {
       setIosHint(true);
       setHidden(false);
@@ -46,18 +47,19 @@ export function InstallPrompt() {
     setHidden(true);
   };
 
+  const [lead, share, then, add, tail] = t.install.iosHint;
+
   return (
     <div className="glass flex items-center gap-3 rounded-2xl p-3 text-sm">
       <span className="text-xl">📲</span>
       <div className="min-w-0 flex-1">
         {iosHint ? (
           <span className="text-muted">
-            Tippe auf <strong className="text-paper">Teilen</strong> und dann{" "}
-            <strong className="text-paper">Zum Home-Bildschirm</strong> — dann startet Wortjagd wie
-            eine echte App.
+            {lead} <strong className="text-paper">{share}</strong> {then}{" "}
+            <strong className="text-paper">{add}</strong> {tail}
           </span>
         ) : (
-          <span className="text-muted">Wortjagd auf dem Homescreen installieren?</span>
+          <span className="text-muted">{t.install.question}</span>
         )}
       </div>
       {deferred ? (
@@ -69,13 +71,13 @@ export function InstallPrompt() {
             dismiss();
           }}
         >
-          Installieren
+          {t.install.install}
         </Button>
       ) : null}
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Hinweis ausblenden"
+        aria-label={t.install.dismiss}
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 text-muted"
       >
         ×

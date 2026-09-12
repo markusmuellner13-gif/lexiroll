@@ -1,6 +1,7 @@
 "use client";
 
 import type { Player } from "@/lib/game/types";
+import { useLang } from "@/lib/i18n/provider";
 import { Button, Card, LinkButton } from "./ui";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -18,6 +19,7 @@ export function FinalSheet({
   canRematch: boolean;
   extra?: React.ReactNode;
 }) {
+  const { t } = useLang();
   const ranked = [...players].sort((a, b) => b.score - a.score);
   const top = ranked[0];
   const iWon = top?.id === myId;
@@ -28,11 +30,11 @@ export function FinalSheet({
       <div className="animate-pop text-center">
         <div className="text-6xl">{iWon ? "🏆" : top?.emoji}</div>
         <h1 className="fluid-title mt-3 font-extrabold">
-          {iWon ? "Gewonnen!" : `${top?.name} gewinnt`}
+          {iWon ? t.final.youWin : t.final.someoneWins(top?.name ?? "")}
         </h1>
         <p className="mt-2 text-muted">
-          {top?.score} Punkte
-          {ranked[1] ? ` · ${top.score - ranked[1].score} Vorsprung` : ""}
+          {t.final.points(top?.score ?? 0)}
+          {ranked[1] ? ` · ${t.final.lead(top.score - ranked[1].score)}` : ""}
         </p>
       </div>
 
@@ -78,11 +80,11 @@ export function FinalSheet({
       <div className="flex flex-col gap-2 sm:flex-row">
         {canRematch ? (
           <Button full size="lg" onClick={onRematch}>
-            Revanche
+            {t.final.rematch}
           </Button>
         ) : null}
         <LinkButton href="/" variant="secondary" size="lg" full>
-          Zum Start
+          {t.final.toStart}
         </LinkButton>
       </div>
     </div>

@@ -1,98 +1,119 @@
-# Wortjagd
+# Lexiroll
 
-**Stadt Land Fluss, neu gewürfelt.** Solo gegen Bots, die wirklich mitdenken — oder online mit
-Freunden, egal auf welchem Gerät sie gerade sitzen.
+**Roll a letter, fill the board.** The *Stadt Land Fluss* / *Nomi cose città* / *Categories* classic —
+solo against bots that actually think, or online with friends on any device.
 
 <p align="center">
-  <img src="public/icons/icon-192.png" width="96" alt="Wortjagd" />
+  <img src="public/icons/icon-192.png" width="96" alt="Lexiroll" />
 </p>
 
-## Was drin ist
+Plays in **English, German and Italian** — not just the interface, but the categories, the word
+banks and the bots' vocabulary.
 
-- **🎲 Buchstabenwürfel** — jede Runde ein neuer Buchstabe, keine Wiederholungen, fiese Buchstaben
-  (Q, X, Y, C) optional raus.
-- **🤖 Solo gegen Bots** — zehn Bot-Charaktere mit eigenem Tempo und eigener Stärke (`chillig`,
-  `normal`, `brutal`). Ohne Anmeldung, ohne Internet.
-- **🌍 Online mit Freunden** — Raum aufmachen, vierstelligen Code teilen, von überall mitspielen.
-  Bots dürfen in Online-Räumen mitspielen.
-- **✏️ Freie Kategorien** — jede Kategorie lässt sich ersetzen oder neu erfinden. Die Bots stellen
-  sich darauf ein (siehe unten).
-- **🏅 Klassische Wertung** — 20 / 10 / 5 / 0 Punkte, plus eine Prüfrunde, in der alle faule
-  Antworten streichen dürfen.
-- **📱 PWA** — installierbar auf dem Homescreen, eigener Splashscreen, funktioniert solo offline.
+## What's in it
 
-## Wie sich die Bots an eigene Kategorien anpassen
+- **🎲 Letter die** — every round rolls a fresh letter with a proper tumble-and-land animation. No
+  repeats within a game, and the awkward letters can be dropped (per language: `Q X Y C` in German,
+  `Q X Y Z` in English, `J K W X Y` in Italian).
+- **🤖 Solo vs bots** — ten bot characters with their own pace and sharpness, three difficulty
+  levels. No account, no sign-up, works offline.
+- **🌍 Online with friends** — open a room, share the four-letter code, play from anywhere. Bots can
+  join online rooms too.
+- **✏️ Your own categories** — replace any of them or invent new ones. The bots adapt (see below).
+- **🏅 Classic scoring** — 20 / 10 / 5 / 0, plus a review phase where everyone can strike out lazy
+  answers, bots included.
+- **📱 PWA** — installable, own icon, 13 iOS startup images, and solo play works with no connection.
 
-Drei Stufen, in dieser Reihenfolge:
+## How the bots adapt to your categories
 
-1. **Wortlisten im Code** — ~30 deutsche Kategorien (Stadt, Land, Fluss, Tier, Automarke,
-   Videospiel, Süßigkeit …) liegen in [`lib/game/wordbank.ts`](lib/game/wordbank.ts). Eine
-   Alias-Tabelle in [`lib/game/categories.ts`](lib/game/categories.ts) normalisiert Umlaute und
-   Plurale, sodass `Städte`, `staedte` und `Lieblingsstadt` alle auf dieselbe Liste zeigen.
-2. **Generierte Listen** — kennt die App eine Kategorie nicht (`Pizzabelag`, `Ausrede fürs
-   Zuspätkommen`), fragt [`/api/bot-words`](app/api/bot-words/route.ts) die Claude API nach
-   passenden Begriffen pro Buchstabe. Das Ergebnis wird in Turso und im Browser gecacht, also
-   einmal pro Kategorie und nie wieder.
-3. **Raten** — ohne API-Key raten die Bots aus einem generischen Substantiv-Pool. Im UI steht dann
-   `🤖?` an der Kategorie, und ihre Antworten lassen sich in der Prüfrunde streichen. Nichts bricht,
-   es wird nur weniger scharf.
+Three tiers, in order:
+
+1. **Built-in word banks** — ~30 categories per language (city, country, river, animal, car brand,
+   video game, sweet …) live in [`lib/game/banks/`](lib/game/banks/). Bank keys are
+   language-neutral slugs, so `Stadt` / `City` / `Città` all point at the same slug while the words
+   stay native.
+2. **Alias resolution** — [`lib/game/categories.ts`](lib/game/categories.ts) folds umlauts and
+   accents, strips plurals and matches compound heads, so `Städte`, `cities`, `Lieblingstier` and
+   `favourite animal` all land on the right bank. It matches whole labels, then single words, then
+   compound *endings* only — which is why `Autor` does not become a car brand.
+3. **Generated banks** — for a genuinely new category (`Pizza topping`, `Excuse for being late`),
+   [`/api/bot-words`](app/api/bot-words/route.ts) asks the Claude API for words in the room's
+   language. The result is cached in Turso and in the browser, so each category costs one request
+   ever.
+
+Without an API key nothing breaks: the bots guess from a generic noun pool, the category is marked
+`🤖?` in the UI, and players can strike the nonsense in the review phase.
 
 ## Stack
 
 | | |
 |---|---|
 | Framework | Next.js 16 (App Router, React 19) |
-| Styles | Tailwind CSS 4 |
-| Datenbank | Turso / libSQL (nur für den Online-Modus) |
+| Styling | Tailwind CSS 4 |
+| Database | Turso / libSQL — only for online rooms |
 | Hosting | Vercel |
-| Bot-Wortlisten | Claude API (optional) |
+| Bot vocabulary | Claude API (optional) |
 
-Der Online-Modus läuft ohne Websockets: Der Serverzustand ist rein zeitbasiert und wird bei jedem
-Request nachgezogen (`lib/rooms.ts`), Clients pollen. Das passt zu Serverless und übersteht
-Verbindungsabbrüche, ohne dass eine Runde hängen bleibt.
+Online play uses no websockets. Room state is time-driven and advanced lazily on every request
+([`lib/rooms.ts`](lib/rooms.ts)), and clients poll. That suits serverless and survives dropped
+connections without a round ever getting stuck. Server failures travel as error codes, so each
+client phrases them in its own language.
 
-## Lokal starten
+## Running it locally
 
 ```bash
 npm install
 npm run dev          # http://localhost:3000
 ```
 
-Solo funktioniert sofort. Für den Online-Modus:
+Solo works immediately. For online rooms:
 
 ```bash
 cp .env.example .env.local
-# TURSO_DATABASE_URL und TURSO_AUTH_TOKEN eintragen
+# fill in TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
 ```
 
-Die Tabellen legt die App beim ersten Request selbst an.
+The app creates its own tables on the first request.
 
-| Skript | Zweck |
+| Script | What it does |
 |---|---|
-| `npm run dev` | Dev-Server |
-| `npm run build` | Produktions-Build |
-| `npm test` | Smoke-Test für Kategorien, Bots und Wertung |
-| `npm run icons` | Icons und Splashscreens aus einer SVG-Quelle rendern |
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm test` | Smoke test: translations, category matching, word banks, bots, scoring |
+| `npm run icons` | Render icons and iOS splash screens from one SVG source |
 
-## Umgebungsvariablen
+## Environment variables
 
-| Variable | Pflicht | Wofür |
+| Variable | Required | Purpose |
 |---|---|---|
-| `TURSO_DATABASE_URL` | für Online-Modus | libSQL-Verbindung |
-| `TURSO_AUTH_TOKEN` | für Online-Modus | Token dazu |
-| `ANTHROPIC_API_KEY` | optional | Wortlisten für unbekannte Kategorien |
+| `TURSO_DATABASE_URL` | for online play | libSQL connection |
+| `TURSO_AUTH_TOKEN` | for online play | its token |
+| `ANTHROPIC_API_KEY` | optional | word banks for invented categories |
 
-Fehlt Turso, versteckt die App den Online-Modus mit einem Hinweis — solo bleibt voll spielbar.
+With Turso missing, the app hides online play behind an explanatory notice — solo stays fully
+playable.
 
-## Aufbau
+## Adding a language
+
+1. Add the code to `LANGS` in [`lib/i18n/types.ts`](lib/i18n/types.ts).
+2. Copy [`lib/i18n/strings/de.ts`](lib/i18n/strings/de.ts) and translate it — the `Strings` type
+   makes a missing key a compile error, and `npm test` checks it too.
+3. Add a word-bank file under [`lib/game/banks/`](lib/game/banks/) using the same slugs.
+4. Fill in `CATEGORY_LABELS`, `DEFAULT_SLUGS` and `EXTRA_ALIASES` in
+   [`lib/game/categories.ts`](lib/game/categories.ts), plus `HARD_LETTERS` in
+   [`lib/game/letters.ts`](lib/game/letters.ts) and a prompt in
+   [`app/api/bot-words/route.ts`](app/api/bot-words/route.ts).
+
+## Layout
 
 ```
 app/
-  api/rooms/…          Raum anlegen, Zustand lesen, Aktionen ausführen
-  api/bot-words/       Wortlisten für neue Kategorien
-  solo/ play/ room/    Spielmodi
-lib/game/              Regeln: Würfel, Wortlisten, Bots, Wertung
-lib/rooms.ts           Zustandsmaschine für Online-Räume
-components/            Spieloberflächen
-scripts/               Icon-Generator, Smoke-Test
+  api/rooms/…          create a room, read state, apply actions
+  api/bot-words/       word banks for new categories
+  solo/ play/ room/    game modes
+lib/game/              rules: die, word banks, bots, scoring
+lib/i18n/              languages, strings, provider
+lib/rooms.ts           state machine for online rooms
+components/            game surfaces
+scripts/               icon generator, smoke test
 ```

@@ -25,7 +25,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ code: stri
   try {
     const body = (await request.json()) as { playerId?: string; action?: Action };
     if (!body.playerId || !body.action || !ACTIONS.has(body.action.type)) {
-      return NextResponse.json({ error: "Ungültige Aktion." }, { status: 400 });
+      return NextResponse.json({ error: "GENERIC" }, { status: 400 });
     }
     await applyAction(normalized, body.playerId.slice(0, 64), body.action);
 
@@ -35,9 +35,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ code: stri
     return NextResponse.json(state, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     if (err instanceof RoomError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
+      return NextResponse.json({ error: err.code }, { status: err.status });
     }
     console.error("action failed", err);
-    return NextResponse.json({ error: "Aktion fehlgeschlagen." }, { status: 500 });
+    return NextResponse.json({ error: "GENERIC" }, { status: 500 });
   }
 }

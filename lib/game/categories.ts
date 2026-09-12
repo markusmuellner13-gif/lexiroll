@@ -1,95 +1,154 @@
+import type { Lang } from "../i18n/types";
+import { LANGS } from "../i18n/types";
 import type { Category } from "./types";
 import { hasBank } from "./wordbank";
 
-/** The classic five. Everything here is editable by the player. */
-export const DEFAULT_CATEGORIES: Category[] = [
-  { id: "stadt", name: "Stadt", bank: "stadt" },
-  { id: "land", name: "Land", bank: "land" },
-  { id: "fluss", name: "Fluss", bank: "fluss" },
-  { id: "name", name: "Name", bank: "name" },
-  { id: "beruf", name: "Beruf", bank: "beruf" },
+/** Display names for the built-in bank slugs. */
+export const CATEGORY_LABELS: Record<Lang, Record<string, string>> = {
+  de: {
+    city: "Stadt", country: "Land", river: "Fluss", name: "Name", job: "Beruf",
+    animal: "Tier", plant: "Pflanze", food: "Essen", color: "Farbe", brand: "Marke",
+    band: "Band / Musiker", movie: "Film", series: "Serie", sport: "Sportart",
+    bodypart: "Körperteil", object: "Gegenstand", clothing: "Kleidungsstück",
+    carbrand: "Automarke", drink: "Getränk", hobby: "Hobby", subject: "Schulfach",
+    superhero: "Superheld", game: "Spiel", instrument: "Instrument", sweet: "Süßigkeit",
+    furniture: "Möbelstück", island: "Insel", capital: "Hauptstadt", videogame: "Videospiel",
+    tool: "Werkzeug", feeling: "Gefühl",
+  },
+  en: {
+    city: "City", country: "Country", river: "River", name: "Name", job: "Job",
+    animal: "Animal", plant: "Plant", food: "Food", color: "Colour", brand: "Brand",
+    band: "Band / artist", movie: "Movie", series: "TV series", sport: "Sport",
+    bodypart: "Body part", object: "Object", clothing: "Clothing",
+    carbrand: "Car brand", drink: "Drink", hobby: "Hobby", subject: "School subject",
+    superhero: "Superhero", game: "Game", instrument: "Instrument", sweet: "Sweet",
+    furniture: "Furniture", island: "Island", capital: "Capital city", videogame: "Video game",
+    tool: "Tool", feeling: "Feeling",
+  },
+  it: {
+    city: "Città", country: "Paese", river: "Fiume", name: "Nome", job: "Mestiere",
+    animal: "Animale", plant: "Pianta", food: "Cibo", color: "Colore", brand: "Marca",
+    band: "Band / cantante", movie: "Film", series: "Serie TV", sport: "Sport",
+    bodypart: "Parte del corpo", object: "Cosa", clothing: "Capo di abbigliamento",
+    carbrand: "Marca di auto", drink: "Bevanda", hobby: "Hobby", subject: "Materia",
+    superhero: "Supereroe", game: "Gioco", instrument: "Strumento", sweet: "Dolce",
+    furniture: "Mobile", island: "Isola", capital: "Capitale", videogame: "Videogioco",
+    tool: "Attrezzo", feeling: "Sentimento",
+  },
+};
+
+/** The classic starting five, as each language plays it. */
+const DEFAULT_SLUGS: Record<Lang, string[]> = {
+  de: ["city", "country", "river", "name", "job"],
+  en: ["city", "country", "river", "name", "job"],
+  // "Nomi, cose, città" - the Italian classic.
+  it: ["name", "object", "city", "animal", "job"],
+};
+
+const SUGGESTION_ORDER = [
+  "animal", "plant", "food", "color", "brand", "band", "movie", "series", "sport",
+  "bodypart", "object", "clothing", "carbrand", "drink", "hobby", "subject",
+  "superhero", "game", "instrument", "sweet", "furniture", "island", "capital",
+  "videogame", "tool", "feeling", "city", "country", "river", "name", "job",
 ];
 
-/** Ready-made extras the player can add with one tap. */
-export const SUGGESTED_CATEGORIES: { name: string; bank: string }[] = [
-  { name: "Tier", bank: "tier" },
-  { name: "Pflanze", bank: "pflanze" },
-  { name: "Essen", bank: "essen" },
-  { name: "Farbe", bank: "farbe" },
-  { name: "Marke", bank: "marke" },
-  { name: "Band / Musiker", bank: "band" },
-  { name: "Film", bank: "film" },
-  { name: "Serie", bank: "serie" },
-  { name: "Sportart", bank: "sport" },
-  { name: "Koerperteil", bank: "koerperteil" },
-  { name: "Gegenstand", bank: "gegenstand" },
-  { name: "Kleidungsstueck", bank: "kleidung" },
-  { name: "Automarke", bank: "automarke" },
-  { name: "Getraenk", bank: "getraenk" },
-  { name: "Hobby", bank: "hobby" },
-  { name: "Schulfach", bank: "schulfach" },
-  { name: "Superheld", bank: "superheld" },
-  { name: "Spiel", bank: "spiel" },
-  { name: "Instrument", bank: "instrument" },
-  { name: "Suessigkeit", bank: "suessigkeit" },
-  { name: "Moebelstueck", bank: "moebel" },
-  { name: "Insel", bank: "insel" },
-  { name: "Hauptstadt", bank: "hauptstadt" },
-  { name: "Videospiel", bank: "videospiel" },
-  { name: "Werkzeug", bank: "werkzeug" },
-  { name: "Gefuehl", bank: "gefuehl" },
-];
+export function defaultCategories(lang: Lang): Category[] {
+  return DEFAULT_SLUGS[lang].map((slug) => ({
+    id: slug,
+    name: CATEGORY_LABELS[lang][slug],
+    bank: slug,
+  }));
+}
 
-/**
- * Free-text category names players type map onto a word bank through here.
- * Keys are normalized (see `normalize`), so "Städte", "staedte" and "STADT"
- * all land on the same entry.
- */
-const ALIASES: Record<string, string> = {
-  stadt: "stadt", stadte: "stadt", city: "stadt", ort: "stadt", grosstadt: "stadt", grosstadte: "stadt",
-  land: "land", lander: "land", country: "land", staat: "land", staaten: "land", nation: "land",
-  fluss: "fluss", flusse: "fluss", gewasser: "fluss", river: "fluss", see: "fluss", meer: "fluss",
-  name: "name", vorname: "name", madchenname: "name", jungenname: "name", spitzname: "name",
-  tier: "tier", tiere: "tier", animal: "tier", haustier: "tier", saugetier: "tier", wildtier: "tier", vogel: "tier", zootier: "tier",
-  beruf: "beruf", berufe: "beruf", job: "beruf", traumberuf: "beruf", handwerk: "beruf",
-  pflanze: "pflanze", pflanzen: "pflanze", blume: "pflanze", blumen: "pflanze", baum: "pflanze", baume: "pflanze", kraut: "pflanze",
-  essen: "essen", speise: "essen", gericht: "essen", lebensmittel: "essen", nahrung: "essen", food: "essen", obst: "essen", gemuse: "essen", fruht: "essen", pizzabelag: "essen",
-  farbe: "farbe", farben: "farbe", color: "farbe", farbton: "farbe",
-  marke: "marke", marken: "marke", brand: "marke", firma: "marke", unternehmen: "marke", logo: "marke",
-  band: "band", bands: "band", musiker: "band", sanger: "band", kunstler: "band", musikband: "band", rapper: "band", dj: "band",
-  film: "film", filme: "film", movie: "film", kinofilm: "film", disneyfilm: "film",
-  serie: "serie", serien: "serie", netflixserie: "serie", tvserie: "serie", anime: "serie",
-  sport: "sport", sportart: "sport", sportarten: "sport", sportler: "sport",
-  korperteil: "koerperteil", korperteile: "koerperteil", organ: "koerperteil", knochen: "koerperteil",
-  gegenstand: "gegenstand", gegenstande: "gegenstand", ding: "gegenstand", sache: "gegenstand", objekt: "gegenstand", haushaltsgegenstand: "gegenstand",
-  kleidung: "kleidung", kleidungsstuck: "kleidung", klamotten: "kleidung", mode: "kleidung", schuh: "kleidung",
-  automarke: "automarke", auto: "automarke", autos: "automarke", autohersteller: "automarke", fahrzeugmarke: "automarke",
-  getrank: "getraenk", getranke: "getraenk", drink: "getraenk", cocktail: "getraenk", alkohol: "getraenk",
-  hobby: "hobby", hobbys: "hobby", freizeit: "hobby", freizeitaktivitat: "hobby",
-  schulfach: "schulfach", schulfacher: "schulfach", fach: "schulfach", unterrichtsfach: "schulfach", studienfach: "schulfach",
-  superheld: "superheld", superhelden: "superheld", held: "superheld", comicheld: "superheld", marvelfigur: "superheld",
-  spiel: "spiel", spiele: "spiel", brettspiel: "spiel", gesellschaftsspiel: "spiel", kartenspiel: "spiel",
-  instrument: "instrument", instrumente: "instrument", musikinstrument: "instrument",
-  susigkeit: "suessigkeit", susigkeiten: "suessigkeit", subigkeit: "suessigkeit", snack: "suessigkeit", schokolade: "suessigkeit", nascherei: "suessigkeit",
-  mobel: "moebel", mobelstuck: "moebel", einrichtung: "moebel", furniture: "moebel",
-  insel: "insel", inseln: "insel", urlaubsinsel: "insel",
-  hauptstadt: "hauptstadt", hauptstadte: "hauptstadt", capital: "hauptstadt",
-  videospiel: "videospiel", videospiele: "videospiel", computerspiel: "videospiel", game: "videospiel", games: "videospiel", pcspiel: "videospiel", konsolenspiel: "videospiel",
-  werkzeug: "werkzeug", werkzeuge: "werkzeug", tool: "werkzeug", baumarktartikel: "werkzeug",
-  gefuhl: "gefuehl", gefuhle: "gefuehl", emotion: "gefuehl", emotionen: "gefuehl", stimmung: "gefuehl",
-  promi: "band", promis: "band", star: "band", stars: "band", beruhmtheit: "band", schauspieler: "film",
+export function suggestedCategories(lang: Lang): { name: string; bank: string }[] {
+  return SUGGESTION_ORDER.filter((slug) => !DEFAULT_SLUGS[lang].includes(slug)).map((slug) => ({
+    name: CATEGORY_LABELS[lang][slug],
+    bank: slug,
+  }));
+}
+
+/** Extra words players actually type, beyond the official labels. */
+const EXTRA_ALIASES: Record<Lang, Record<string, string>> = {
+  de: {
+    stadte: "city", ort: "city", grosstadt: "city", lander: "country", staat: "country",
+    nation: "country", gewasser: "river", see: "river", meer: "river", vorname: "name",
+    madchenname: "name", jungenname: "name", spitzname: "name", tiere: "animal",
+    haustier: "animal", saugetier: "animal", wildtier: "animal", zootier: "animal",
+    berufe: "job", traumberuf: "job", handwerk: "job", blume: "plant", baum: "plant",
+    kraut: "plant", speise: "food", gericht: "food", lebensmittel: "food", obst: "food",
+    gemuse: "food", pizzabelag: "food", farben: "color", farbton: "color", firma: "brand",
+    unternehmen: "brand", logo: "brand", musiker: "band", sanger: "band", kunstler: "band",
+    rapper: "band", promi: "band", star: "band", filme: "movie", kinofilm: "movie",
+    serien: "series", netflixserie: "series", anime: "series", sportart: "sport",
+    sportler: "sport", organ: "bodypart", knochen: "bodypart", ding: "object",
+    sache: "object", objekt: "object", klamotten: "clothing", mode: "clothing",
+    schuh: "clothing", auto: "carbrand", autohersteller: "carbrand", drink: "drink",
+    cocktail: "drink", alkohol: "drink", freizeit: "hobby", fach: "subject",
+    unterrichtsfach: "subject", studienfach: "subject", held: "superhero",
+    comicheld: "superhero", brettspiel: "game", gesellschaftsspiel: "game",
+    kartenspiel: "game", musikinstrument: "instrument", snack: "sweet",
+    schokolade: "sweet", nascherei: "sweet", einrichtung: "furniture",
+    urlaubsinsel: "island", computerspiel: "videogame", pcspiel: "videogame",
+    konsolenspiel: "videogame", emotion: "feeling", stimmung: "feeling",
+    werkzeuge: "tool", schauspieler: "movie",
+  },
+  en: {
+    cities: "city", town: "city", place: "city", countries: "country", nation: "country",
+    state: "country", rivers: "river", lake: "river", sea: "river", water: "river",
+    names: "name", firstname: "name", boysname: "name", girlsname: "name",
+    animals: "animal", pet: "animal", mammal: "animal", bird: "animal", jobs: "job",
+    profession: "job", occupation: "job", career: "job", plants: "plant", flower: "plant",
+    tree: "plant", herb: "plant", meal: "food", dish: "food", fruit: "food",
+    vegetable: "food", snack: "food", pizzatopping: "food", colours: "color",
+    colors: "color", color: "color", brands: "brand", company: "brand", logo: "brand",
+    artist: "band", singer: "band", musician: "band", rapper: "band", celebrity: "band",
+    movies: "movie", film: "movie", films: "movie", actor: "movie", show: "series",
+    tvshow: "series", sports: "sport", athlete: "sport", organ: "bodypart",
+    bone: "bodypart", thing: "object", item: "object", stuff: "object",
+    clothes: "clothing", garment: "clothing", fashion: "clothing", shoe: "clothing",
+    car: "carbrand", carmaker: "carbrand", drinks: "drink", cocktail: "drink",
+    beverage: "drink", alcohol: "drink", hobbies: "hobby", pastime: "hobby",
+    subject: "subject", schoolsubject: "subject", hero: "superhero", comic: "superhero",
+    boardgame: "game", cardgame: "game", games: "game", instruments: "instrument",
+    candy: "sweet", sweets: "sweet", dessert: "sweet", chocolate: "sweet",
+    furniture: "furniture", islands: "island", capitals: "capital",
+    videogames: "videogame", computergame: "videogame", pcgame: "videogame",
+    tools: "tool", emotion: "feeling", feelings: "feeling", mood: "feeling",
+  },
+  it: {
+    citta: "city", paesi: "country", nazione: "country", stato: "country",
+    fiumi: "river", lago: "river", mare: "river", nomi: "name", nomedipersona: "name",
+    animali: "animal", bestia: "animal", mestieri: "job", lavoro: "job",
+    professione: "job", piante: "plant", fiore: "plant", albero: "plant",
+    alimento: "food", piatto: "food", frutta: "food", verdura: "food",
+    condimentopizza: "food", colori: "color", marche: "brand", azienda: "brand",
+    cantante: "band", musicista: "band", artista: "band", rapper: "band",
+    personaggiofamoso: "band", attore: "movie", pellicola: "movie", serietv: "series",
+    telefilm: "series", anime: "series", sportivo: "sport", organo: "bodypart",
+    osso: "bodypart", cose: "object", oggetto: "object", roba: "object",
+    vestito: "clothing", vestiti: "clothing", abbigliamento: "clothing",
+    scarpa: "clothing", auto: "carbrand", macchina: "carbrand", automobile: "carbrand",
+    bevande: "drink", bibita: "drink", cocktail: "drink", alcolico: "drink",
+    passatempo: "hobby", materie: "subject", materiascolastica: "subject",
+    eroe: "superhero", fumetto: "superhero", giochi: "game", giocodatavolo: "game",
+    strumentomusicale: "instrument", dolci: "sweet", dessert: "sweet",
+    caramella: "sweet", cioccolato: "sweet", mobili: "furniture", arredamento: "furniture",
+    isole: "island", capitali: "capital", videogiochi: "videogame",
+    giocopercomputer: "videogame", attrezzi: "tool", utensile: "tool",
+    emozione: "feeling", sentimenti: "feeling", umore: "feeling",
+  },
 };
 
 /**
- * Lowercases, folds umlauts and strips everything that is not a letter, so
- * user input like "Städte 🌍" and "staedte" compare equal.
+ * Lowercases, folds German umlauts and Italian accents and drops everything
+ * that is not a letter, so "Städte 🌍", "staedte" and "città" all compare
+ * the way a player would expect.
  */
 export function normalize(input: string): string {
   return input
     .toLowerCase()
-    .replace(/ä/g, "a")
-    .replace(/ö/g, "o")
-    .replace(/ü/g, "u")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/ß/g, "s")
     .replace(/ae/g, "a")
     .replace(/oe/g, "o")
@@ -97,47 +156,91 @@ export function normalize(input: string): string {
     .replace(/[^a-z]/g, "");
 }
 
-/** Candidate singular forms for a normalized German plural. */
+/** Alias tables, built once from the labels plus the curated extras. */
+const ALIASES: Record<Lang, Record<string, string>> = (() => {
+  const built = {} as Record<Lang, Record<string, string>>;
+  for (const lang of LANGS) {
+    const table: Record<string, string> = {};
+    for (const [slug, label] of Object.entries(CATEGORY_LABELS[lang])) {
+      table[normalize(label)] = slug;
+      // "Band / Musiker" also answers to each half on its own.
+      for (const part of label.split(/[/,]/)) {
+        const key = normalize(part);
+        if (key.length >= 3) table[key] = slug;
+      }
+      table[slug] = slug;
+    }
+    Object.assign(table, EXTRA_ALIASES[lang]);
+    built[lang] = table;
+  }
+  return built;
+})();
+
+/** Candidate singular forms for a normalized plural. */
 function singulars(word: string): string[] {
   const out = [word];
-  for (const suffix of ["innen", "nen", "en", "er", "se", "e", "n", "s"]) {
+  for (const suffix of ["innen", "nen", "en", "er", "ies", "es", "e", "n", "s", "i"]) {
     if (word.length > suffix.length + 2 && word.endsWith(suffix)) {
       out.push(word.slice(0, -suffix.length));
     }
   }
+  if (word.endsWith("ies") && word.length > 5) out.push(`${word.slice(0, -3)}y`);
   return out;
 }
 
 /**
- * Maps a category label onto a word bank key so the bots know what to answer.
- * Returns null for genuinely unknown categories - those get a generated bank
- * (see /api/bot-words) or the generic fallback.
+ * Maps a category label onto a bank slug so the bots know what to answer.
+ * The player's own language wins; the others are tried as a fallback so a
+ * mixed-language room still works. Returns null for genuinely new categories.
  */
-export function resolveBank(name: string): string | null {
+export function resolveBank(lang: Lang, name: string): string | null {
   const n = normalize(name);
   if (!n) return null;
 
-  for (const candidate of singulars(n)) {
-    if (ALIASES[candidate]) return ALIASES[candidate];
-    if (hasBank(candidate)) return candidate;
+  const order: Lang[] = [lang, ...LANGS.filter((l) => l !== lang)];
+  const tables = order.map((l) => ALIASES[l]);
+
+  // 1. The whole label, including plural forms.
+  for (const table of tables) {
+    for (const candidate of singulars(n)) {
+      if (table[candidate]) return table[candidate];
+    }
   }
 
-  // "Lieblingstier", "Tier mit Fell", "deutsche Stadt" - find a known token inside.
-  let best: { key: string; len: number } | null = null;
-  for (const [alias, bank] of Object.entries(ALIASES)) {
-    if (alias.length >= 4 && n.includes(alias) && (!best || alias.length > best.len)) {
-      best = { key: bank, len: alias.length };
+  // 2. Individual words: "favourite animal", "citta italiana", "Tier mit Fell".
+  const tokens = name
+    .split(/[s/,;:()–—-]+/)
+    .map(normalize)
+    .filter((t) => t.length >= 3);
+  for (const table of tables) {
+    for (const token of tokens) {
+      for (const candidate of singulars(token)) {
+        if (table[candidate]) return table[candidate];
+      }
     }
+  }
+
+  // 3. Compounds put the head noun last ("Lieblingstier" -> Tier). Matching on
+  //    the ending only, never anywhere inside, keeps "Autor" from becoming a
+  //    car brand.
+  let best: { key: string; len: number } | null = null;
+  for (const table of tables) {
+    for (const [alias, slug] of Object.entries(table)) {
+      if (alias.length < 4) continue;
+      const hit = n.endsWith(alias) || tokens.some((t) => t.endsWith(alias));
+      if (hit && (!best || alias.length > best.len)) best = { key: slug, len: alias.length };
+    }
+    if (best) break;
   }
   return best?.key ?? null;
 }
 
 let counter = 0;
-export function makeCategory(name: string): Category {
+export function makeCategory(lang: Lang, name: string): Category {
   const trimmed = name.trim();
-  const bank = resolveBank(trimmed);
+  const bank = resolveBank(lang, trimmed);
   return {
-    id: `${normalize(trimmed) || "kat"}-${Date.now().toString(36)}-${counter++}`,
+    id: `${bank ?? (normalize(trimmed) || "cat")}-${Date.now().toString(36)}-${counter++}`,
     name: trimmed,
     bank,
     custom: true,
@@ -145,6 +248,6 @@ export function makeCategory(name: string): Category {
 }
 
 /** True when the bots have real domain knowledge for this category. */
-export function isKnown(category: Category): boolean {
-  return hasBank(category.bank);
+export function isKnown(lang: Lang, category: Category): boolean {
+  return hasBank(lang, category.bank);
 }

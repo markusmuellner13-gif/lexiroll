@@ -93,20 +93,6 @@ button {
   animation: pop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes dice-tumble {
-  0% {
-    transform: rotateX(0deg) scale(1);
-  }
-  50% {
-    transform: rotateX(180deg) scale(1.12);
-  }
-  100% {
-    transform: rotateX(360deg) scale(1);
-  }
-}
-.animate-tumble {
-  animation: dice-tumble 0.16s linear infinite;
-}
 
 @keyframes land {
   0% {
@@ -172,4 +158,68 @@ button {
 }
 .animate-loader {
   animation: loader-sweep 0.95s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes dice-land {
+  0% {
+    transform: scale(1.32) rotate(-7deg);
+  }
+  35% {
+    transform: scale(0.86) rotate(3deg) translateY(4px);
+  }
+  62% {
+    transform: scale(1.08) rotate(-1.5deg);
+  }
+  82% {
+    transform: scale(0.97) rotate(0.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+.animate-dice-land {
+  animation: dice-land 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dice-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+.animate-dice-ring {
+  animation: dice-ring 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes dice-spark {
+  0% {
+    transform: translate(0, 0) scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0.2);
+    opacity: 0;
+  }
+}
+.animate-dice-spark {
+  animation: dice-spark 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes dice-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+.animate-dice-glow {
+  animation: dice-glow 0.45s ease-in-out infinite;
 }

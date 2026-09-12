@@ -7,16 +7,18 @@ import { rollLetter } from "@/lib/game/letters";
 import { scoreRound, type VetoMap } from "@/lib/game/scoring";
 import type { Answers, GameSettings, Player, RoundResult } from "@/lib/game/types";
 import { hydrateCachedBanks, useBotTraining } from "@/lib/botbanks";
-import { loadProfile, loadSettings, recordGame, saveSettings } from "@/lib/storage";
+import { useLang } from "@/lib/i18n/provider";
+import { loadProfile, loadSettings, recordGame, retargetSettings, saveSettings } from "@/lib/storage";
 import { AnswerSheet } from "./AnswerSheet";
 import { CategoryEditor } from "./CategoryEditor";
 import { FinalSheet } from "./FinalSheet";
+import { LangSwitch } from "./LangSwitch";
 import { LetterDice } from "./LetterDice";
+import { Mark } from "./Logo";
 import { ResultsSheet } from "./ResultsSheet";
 import { ReviewSheet } from "./ReviewSheet";
 import { SettingsPanel } from "./SettingsPanel";
 import { Button, Card, Stepper } from "./ui";
-import { Mark } from "./Logo";
 
 const ME = "me";
 const STOP_GRACE_MS = 3000;
@@ -24,6 +26,7 @@ const STOP_GRACE_MS = 3000;
 type Phase = "setup" | "rolling" | "playing" | "review" | "results" | "final";
 
 export function SoloGame() {
+  const { t, lang, ready } = useLang();
   const [settings, setSettings] = useState<GameSettings | null>(null);
   const [botCount, setBotCount] = useState(2);
   const [phase, setPhase] = useState<Phase>("setup");
@@ -42,22 +45,27 @@ export function SoloGame() {
   const [result, setResult] = useState<RoundResult | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
+  // Load once the language is known, and follow the player if they switch it.
   useEffect(() => {
+    if (!ready) return;
     hydrateCachedBanks();
-    setSettings(loadSettings());
-  }, []);
+    setSettings((current) => (current ? retargetSettings(current, lang) : loadSettings(lang)));
+  }, [ready, lang]);
 
-  const learning = useBotTraining(settings?.categories ?? [], (updates) => {
+  const learning = useBotTraining(settings?.lang ?? lang, settings?.categories ?? [], (updates) => {
     setSettings((s) => {
       if (!s) return s;
       const map = new Map(updates.map((u) => [u.id, u.bank]));
-      return { ...s, categories: s.categories.map((c) => (map.has(c.id) ? { ...c, bank: map.get(c.id)! } : c)) };
+      return {
+        ...s,
+        categories: s.categories.map((c) => (map.has(c.id) ? { ...c, bank: map.get(c.id)! } : c)),
+      };
     });
   });
 
   // One clock for the whole screen.
   useEffect(() => {
-    if (phase !== "playing" && phase !== "review") return;
+    if (phase !== "playing") return;
     const id = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(id);
   }, [phase]);
@@ -94,10 +102,17 @@ export function SoloGame() {
 
   const begin = () => {
     if (!settings) return;
-    const bots = makeBots(botCount, settings.botDifficulty);
+    const bots = makeBots(botCount, settings.botDifficulty, settings.lang);
     const me = loadProfile();
     const roster: Player[] = [
-      { id: ME, name: me.name.trim() || "Du", emoji: me.emoji, kind: "human", score: 0, isHost: true },
+      {
+        id: ME,
+        name: me.name.trim() || t.common.you,
+        emoji: me.emoji,
+        kind: "human",
+        score: 0,
+        isHost: true,
+      },
       ...bots,
     ];
     setPlayers(roster);
@@ -113,6 +128,10 @@ export function SoloGame() {
     return grace ?? hard;
   }, [settings, roundStart, stoppedAt]);
 
+  // `answers` changes every keystroke; keep a ref so closeRound stays stable.
+  const answersRef = useRef<Answers>({});
+  answersRef.current = answers;
+
   /** Freezes everything and moves to the review phase. */
   const closeRound = useCallback(
     (botCutoffMs: number) => {
@@ -124,11 +143,7 @@ export function SoloGame() {
     [plans],
   );
 
-  // `answers` changes every keystroke; keep a ref so closeRound stays stable.
-  const answersRef = useRef<Answers>({});
-  answersRef.current = answers;
-
-  // Bots reaching their Stopp moment, and the round clock running out.
+  // Bots reaching their Stop moment, and the round clock running out.
   useEffect(() => {
     if (phase !== "playing" || !settings) return;
 
@@ -187,10 +202,14 @@ export function SoloGame() {
   if (!settings) {
     return (
       <div className="grid min-h-[100svh] place-items-center">
-        <Mark size={64} />
+        <div className="animate-pulse">
+          <Mark size={64} />
+        </div>
       </div>
     );
   }
+
+  const roundLabel = t.common.round(roundNo, settings.rounds);
 
   // ------------------------------------------------------------------ screens
 
@@ -198,21 +217,27 @@ export function SoloGame() {
     return (
       <div className="shell space-y-5 py-[calc(1.5rem+var(--safe-t))] pb-[calc(2rem+var(--safe-b))]">
         <div className="flex items-center gap-3">
-          <Link href="/" className="grid h-10 w-10 place-items-center rounded-full bg-white/8 text-lg">
+          <Link
+            href="/"
+            aria-label={t.common.back}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/8 text-lg"
+          >
             ←
           </Link>
-          <h1 className="text-2xl font-extrabold">Solo gegen Bots</h1>
+          <h1 className="min-w-0 flex-1 truncate text-2xl font-extrabold">{t.solo.title}</h1>
+          <LangSwitch />
         </div>
 
         <Card className="flex items-center justify-between gap-4 p-4">
-          <div>
-            <div className="text-sm font-bold">Gegner</div>
-            <div className="text-xs text-muted">So viele Bots spielen mit.</div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold">{t.solo.opponents}</div>
+            <div className="text-xs text-muted">{t.solo.opponentsHint}</div>
           </div>
           <Stepper value={botCount} min={1} max={5} onChange={setBotCount} />
         </Card>
 
         <CategoryEditor
+          lang={settings.lang}
           categories={categories}
           onChange={(next) => patchSettings({ ...settings, categories: next })}
           learning={learning}
@@ -221,7 +246,7 @@ export function SoloGame() {
         <SettingsPanel settings={settings} onChange={patchSettings} />
 
         <Button full size="lg" onClick={begin}>
-          Los geht&apos;s 🎲
+          {t.solo.start}
         </Button>
       </div>
     );
@@ -232,7 +257,7 @@ export function SoloGame() {
       <div className="shell grid min-h-[100svh] place-items-center">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="text-sm font-semibold text-muted">
-            Runde {roundNo} von {settings.rounds}
+            {t.common.roundLong(roundNo, settings.rounds)}
           </div>
           <LetterDice
             letter={letter}
@@ -244,7 +269,7 @@ export function SoloGame() {
               setPhase("playing");
             }}
           />
-          <div className="text-lg font-bold">Buchstabe wird gewürfelt…</div>
+          <div className="text-lg font-bold">{t.common.rolling}</div>
         </div>
       </div>
     );
@@ -257,7 +282,8 @@ export function SoloGame() {
     for (const plan of plans) {
       progress[plan.playerId] = plan.fills.filter((f) => f.atMs <= elapsed).length;
     }
-    const stopper = stoppedBy && stoppedBy !== ME ? players.find((p) => p.id === stoppedBy) ?? null : null;
+    const stopper =
+      stoppedBy && stoppedBy !== ME ? (players.find((p) => p.id === stoppedBy) ?? null) : null;
 
     return (
       <AnswerSheet
@@ -273,7 +299,7 @@ export function SoloGame() {
         players={players}
         progress={progress}
         stoppedBy={stopper}
-        roundLabel={`Runde ${roundNo}/${settings.rounds}`}
+        roundLabel={roundLabel}
       />
     );
   }
@@ -298,7 +324,7 @@ export function SoloGame() {
         onConfirm={finishReview}
         confirmed={[]}
         secondsLeft={null}
-        roundLabel={`Runde ${roundNo}/${settings.rounds}`}
+        roundLabel={roundLabel}
       />
     );
   }
@@ -309,9 +335,9 @@ export function SoloGame() {
         categories={categories}
         players={players}
         result={result}
-        roundLabel={`Runde ${roundNo}/${settings.rounds}`}
+        roundLabel={roundLabel}
         canAdvance
-        nextLabel="Nächste Runde 🎲"
+        nextLabel={t.results.next}
         onNext={() => startRound(players, settings, usedLetters, roundNo + 1)}
       />
     );
@@ -331,8 +357,7 @@ export function SoloGame() {
         extra={
           result ? (
             <Card className="p-4 text-center text-sm text-muted">
-              Letzter Buchstabe: <span className="font-bold text-paper">{result.letter}</span> ·{" "}
-              {settings.rounds} Runden · {categories.length} Kategorien
+              {t.final.summary(result.letter, settings.rounds, categories.length)}
             </Card>
           ) : null
         }
@@ -342,5 +367,3 @@ export function SoloGame() {
 
   return null;
 }
-
-

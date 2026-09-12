@@ -1,19 +1,19 @@
 "use client";
 
-import { DEFAULT_CATEGORIES } from "./game/categories";
-import { DEFAULT_SETTINGS, type Category, type GameSettings } from "./game/types";
+import { defaultCategories } from "./game/categories";
+import { defaultSettings } from "./game/defaults";
+import { hardLetters } from "./game/letters";
+import type { Category, GameSettings } from "./game/types";
+import { isLang, type Lang } from "./i18n/types";
 
-const SETTINGS_KEY = "wj-settings-v1";
-const PROFILE_KEY = "wj-profile-v1";
-const STATS_KEY = "wj-stats-v1";
+const SETTINGS_KEY = "lx-settings-v1";
+const PROFILE_KEY = "lx-profile-v1";
+const STATS_KEY = "lx-stats-v1";
+const BANK_CACHE_KEY = "lx-banks-v1";
 
 export type Profile = { id: string; name: string; emoji: string };
 
 export const AVATARS = ["🦊", "🐼", "🐙", "🦉", "🐝", "🦄", "🐸", "🦁", "🐧", "🐨", "🦜", "🐳"];
-
-export function defaultSettings(): GameSettings {
-  return { ...DEFAULT_SETTINGS, categories: DEFAULT_CATEGORIES.map((c) => ({ ...c })) };
-}
 
 function read<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
@@ -34,17 +34,46 @@ function write(key: string, value: unknown) {
   }
 }
 
-export function loadSettings(): GameSettings {
+function sameSlugs(categories: Category[], reference: Category[]): boolean {
+  if (categories.length !== reference.length) return false;
+  return categories.every((c, i) => c.bank === reference[i].bank);
+}
+
+/**
+ * Moves settings to another language. Untouched defaults follow along; a
+ * player's own category list is left exactly as they built it.
+ */
+export function retargetSettings(settings: GameSettings, lang: Lang): GameSettings {
+  if (settings.lang === lang) return settings;
+  const wasDefault = sameSlugs(settings.categories, defaultCategories(settings.lang));
+  const hadDefaultLetters =
+    [...settings.excludedLetters].sort().join("") === [...hardLetters(settings.lang)].sort().join("");
+  return {
+    ...settings,
+    lang,
+    categories: wasDefault ? defaultCategories(lang) : settings.categories,
+    excludedLetters: hadDefaultLetters ? hardLetters(lang) : settings.excludedLetters,
+  };
+}
+
+export function loadSettings(lang: Lang): GameSettings {
+  const base = defaultSettings(lang);
   const stored = read<Partial<GameSettings>>(SETTINGS_KEY);
-  const base = defaultSettings();
   if (!stored) return base;
-  const categories = Array.isArray(stored.categories) && stored.categories.length
-    ? (stored.categories as Category[])
-    : base.categories;
-  const merged = { ...base, ...stored, categories };
-  // Without a clock, Stopp is the only thing that can end a round.
+
+  const categories =
+    Array.isArray(stored.categories) && stored.categories.length
+      ? (stored.categories as Category[])
+      : base.categories;
+  const merged: GameSettings = {
+    ...base,
+    ...stored,
+    lang: isLang(stored.lang) ? stored.lang : lang,
+    categories,
+  };
+  // Without a clock, Stop is the only thing that can end a round.
   if (merged.roundSeconds === 0) merged.allowStop = true;
-  return merged;
+  return retargetSettings(merged, lang);
 }
 
 export function saveSettings(settings: GameSettings) {
@@ -83,15 +112,15 @@ export function recordGame(won: boolean, points: number, bestRound: number) {
   });
 }
 
-/** Word banks the generator produced, kept per browser so we only ask once. */
-const BANK_CACHE_KEY = "wj-banks-v1";
+/** Generated word banks, cached per browser so we only ask for each one once. */
+type BankCache = Record<string, Record<string, Record<string, string[]>>>; // lang -> key -> letter -> words
 
-export function loadCachedBanks(): Record<string, Record<string, string[]>> {
-  return read<Record<string, Record<string, string[]>>>(BANK_CACHE_KEY) ?? {};
+export function loadCachedBanks(): BankCache {
+  return read<BankCache>(BANK_CACHE_KEY) ?? {};
 }
 
-export function cacheBank(key: string, bank: Record<string, string[]>) {
+export function cacheBank(lang: Lang, key: string, bank: Record<string, string[]>) {
   const all = loadCachedBanks();
-  all[key] = bank;
+  (all[lang] ??= {})[key] = bank;
   write(BANK_CACHE_KEY, all);
 }

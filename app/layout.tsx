@@ -4,6 +4,7 @@ import "./globals.css";
 import { SPLASH_SPECS, splashHref, splashMedia } from "@/lib/splash";
 import { BootScreen } from "@/components/BootScreen";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { LangProvider } from "@/lib/i18n/provider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -12,12 +13,12 @@ const outfit = Outfit({
   display: "swap",
 });
 
-const title = "Wortjagd";
+const title = "Lexiroll";
 const description =
-  "Stadt Land Fluss, neu gewürfelt: solo gegen schlaue Bots oder online mit Freunden. Eigene Kategorien, Buchstabenwürfel, Punktewertung.";
+  "Roll a letter, fill the board. The Stadt-Land-Fluss classic solo against clever bots or online with friends — your own categories, in English, German or Italian.";
 
 export const metadata: Metadata = {
-  title: { default: `${title} — Stadt Land Fluss neu gewürfelt`, template: `%s — ${title}` },
+  title: { default: `${title} — City · Country · River`, template: `%s — ${title}` },
   description,
   applicationName: title,
   manifest: "/manifest.webmanifest",
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
-  openGraph: { title, description, type: "website", locale: "de_DE", siteName: title },
+  openGraph: { title, description, type: "website", siteName: title },
   twitter: { card: "summary_large_image", title, description },
 };
 
@@ -46,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={outfit.variable}>
+    <html lang="en" className={outfit.variable}>
       <head>
         {SPLASH_SPECS.map((spec) => (
           <link
@@ -58,9 +59,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ))}
       </head>
       <body className="antialiased">
-        <BootScreen />
-        {children}
-        <ServiceWorker />
+        <LangProvider>
+          <BootScreen />
+          {children}
+          <ServiceWorker />
+        </LangProvider>
       </body>
     </html>
   );

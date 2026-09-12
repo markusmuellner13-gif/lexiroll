@@ -19,10 +19,10 @@ const GRADIENT = `
   </linearGradient>`;
 
 const GLYPH = `
-  <path d="M28 40l11.5 44h11L64 52.5 77.5 84h11L100 40H88.5l-6 26.5L70 40h-12L45.5 66.5 39.5 40z" fill="#07060f"/>
-  <circle cx="34" cy="100" r="5.5" fill="#07060f"/>
-  <circle cx="64" cy="100" r="5.5" fill="#07060f" fill-opacity="0.55"/>
-  <circle cx="94" cy="100" r="5.5" fill="#07060f" fill-opacity="0.3"/>`;
+  <path d="M40 30h19v37h31v19H40z" fill="#07060f"/>
+  <circle cx="34" cy="101" r="5.5" fill="#07060f"/>
+  <circle cx="64" cy="101" r="5.5" fill="#07060f" fill-opacity="0.55"/>
+  <circle cx="94" cy="101" r="5.5" fill="#07060f" fill-opacity="0.3"/>`;
 
 /** The app tile: rounded square, gradient, wordmark glyph. */
 function tileSvg({ maskable = false } = {}) {
@@ -66,10 +66,10 @@ function splashSvg(w, h) {
     </g>
     <text x="${cx}" y="${cy + tile * 0.92}" text-anchor="middle" fill="#f5f3ff"
       font-family="Segoe UI, Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="800"
-      letter-spacing="-1">Wortjagd</text>
+      letter-spacing="-1">Lexiroll</text>
     <text x="${cx}" y="${cy + tile * 0.92 + fontSize * 0.95}" text-anchor="middle" fill="#a09bc0"
       font-family="Segoe UI, Arial, Helvetica, sans-serif" font-size="${Math.round(fontSize * 0.45)}"
-      letter-spacing="2">STADT · LAND · FLUSS</text>
+      letter-spacing="2">CITY · COUNTRY · RIVER</text>
   </svg>`;
 }
 
